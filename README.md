@@ -1,166 +1,214 @@
-# Hypoteční Kalkulačka
+# Mortgage Calculator
 
-iPad aplikace pro simulaci investice do nemovitosti na hypotéku. Umožňuje interaktivně modelovat celý průběh hypotéky rok po roku — vidíte přesně, kolik platíte na úrocích, kolik přináší nájem a jaký je váš čistý výsledek v každém okamžiku.
+An iPad app for simulating a property investment financed by a mortgage. Model the entire loan year by year — see exactly how much you pay in interest, how much rental income you earn, and what your net result is at any point in time.
 
-## Požadavky
+## Requirements
 
-- iPadOS 17 nebo novější
+- iPadOS 17 or later
 - Xcode 15+
 
-## Funkce
+## Features
 
-### Vstupy (levý panel)
+### Inputs (left panel)
 
-| Sekce | Parametr | Výchozí hodnota |
+| Section | Parameter | Default value |
 |---|---|---|
-| Nemovitost | Cena nemovitosti | 12 875 000 Kč |
-| Nemovitost | Vlastní kapitál | 10 % (1 287 500 Kč) |
-| Hypotéka | Délka | 20 let |
-| Hypotéka | Úroková sazba | 4,50 % |
-| Příjmy | Měsíční nájem | 30 000 Kč |
-| Příjmy | Roční růst nájmu | 2,00 % |
-| Opravy | Roční údržba | 130 000 Kč |
-| Opravy | Velká údržba každých N let | 10 let / 300 000 Kč |
+| Property | Purchase price | 12,875,000 CZK |
+| Property | Own capital | 10 % (1,287,500 CZK) |
+| Mortgage | Duration | 20 years |
+| Mortgage | Interest rate | 4.50 % |
+| Income | Monthly rent | 30,000 CZK |
+| Income | Annual rent growth | 2.00 % |
+| Repairs | Annual maintenance | 130,000 CZK |
+| Repairs | Major maintenance every N years | 10 years / 300,000 CZK |
 
-Všechny hodnoty jsou ovládány slidery — změna okamžitě přepočítá celý harmonogram.
+All values are controlled by sliders — any change instantly recalculates the full schedule.
 
-Aplikace průběžně zobrazuje:
-- **Měsíční splátku** (vypočítaná ze vzorce, nelze zadat ručně)
-- **Bod zvratu** — první rok, kdy kumulativní čistý výsledek přejde do plusu
-- **Čistý výsledek za celou dobu** hypotéky
+The app continuously displays:
+- **Monthly payment** (calculated from the formula, not editable directly)
+- **Break-even year** — the first year the cumulative net result turns positive
+- **Net result over the full mortgage term**
 
-### Mimořádné splátky jistiny
+### Extra principal payments
 
-Lze přidat libovolný počet jednorázových splátek jistiny v konkrétním roce:
+Any number of one-off principal payments can be added for specific years:
 
-1. Zvolte rok Stepperem (1 — délka hypotéky)
-2. Nastavte výši splátky sliderem (10 000 — 3 000 000 Kč, krok 10 000 Kč)
-3. Klikněte **Přidat mimořádnou splátku**
+1. Choose the year with the Stepper (1 — mortgage duration)
+2. Set the amount with the slider (10,000 — 3,000,000 CZK, step 10,000 CZK)
+3. Tap **Add extra payment**
 
-Každá splátka má **toggle** — lze ji dočasně vypnout bez smazání. To umožňuje porovnat scénáře (např. "co kdybych v roce 5 zaplatil navíc 500 000 Kč?") pouhým přepnutím.
+Each payment has a **toggle** — it can be temporarily disabled without deleting it. This lets you compare scenarios (e.g. "what if I paid an extra 500,000 CZK in year 5?") by simply flipping the switch.
 
-Pokud mimořádné splátky hypotéku zkrátí, zobrazí se rok předčasného splacení.
+If extra payments pay off the mortgage early, the payoff year is shown.
 
-### Snapshot (kumulativní přehled ke zvolenému roku)
+### Interest rate refixation
 
-Slider v horní části pravého panelu umožňuje "cestovat v čase" — posunete ho na libovolný rok a okamžitě vidíte kumulativní hodnoty k tomuto roku.
+Enable the **Rate change after refixation** toggle to simulate what happens when your fixed-rate period ends:
 
-**Se započtením vlastního kapitálu:**
+- Set the end of the fixed period (year slider)
+- Set the new interest rate
+- The monthly payment is automatically recalculated from the remaining balance and remaining term
+- The refixation year is marked with a ↺ icon in the table and a vertical line in the amortisation chart
 
-| Karta | Popis |
+### Rental income tax
+
+Enable **Rental income tax** to include Czech income tax on rental earnings:
+
+| Mode | Basis |
 |---|---|
-| Splátky celkem | Součet všech pravidelných + mimořádných splátek |
-| z toho úroky | Kolik z výše zaplacených peněz byly čistě úroky (náklad) |
-| Zbývající dluh | Nesplacená jistina na konci zvoleného roku |
-| Příjmy z nájmu | Kumulativní příjmy z nájmu (s ročním růstem) |
-| Čistý výsledek | Výsledek zahrnující počáteční vklad vlastního kapitálu |
+| Flat-rate expense 30 % | Taxable base = 70 % of rental income |
+| Actual costs | Taxable base = rent − interest − repairs (min. 0) |
 
-**Bez vlastního kapitálu (čistý tok peněz):**
+The tax rate slider defaults to 15 % (standard Czech rate). Tax is subtracted from the net result each year and shown as a separate column in the table and a separate snapshot card.
 
-| Karta | Popis |
+### Snapshot (cumulative overview at a selected year)
+
+The slider at the top of the right panel lets you "travel in time" — drag it to any year and instantly see cumulative values up to that point.
+
+**Including own capital:**
+
+| Card | Description |
 |---|---|
-| Zaplaceno na splátkách | Totéž co výše |
-| Příjmy z nájmu | Totéž co výše |
-| Nájem − splátky | Kladné = nájem pokrývá splátky s přebytkem |
+| Total payments | Sum of all regular + extra payments |
+| of which interest | How much of the above was pure interest cost |
+| Remaining debt | Unpaid principal at the end of the selected year |
+| Rental income | Cumulative rental income (with annual growth) |
+| Net result | Result including the initial own-capital outlay |
 
-### Grafy
+**Excluding own capital (pure cash flow, after tax):**
 
-Přepínačem **Graf / Tabulka** v pravém panelu volíte zobrazení.
-
-#### 1. Kumulativní čistý výsledek
-Linie ukazující celkový výsledek investice od prvního dne. Červená = v mínusu, zelená = v plusu. Indigo svislá čára označuje zvolený rok ze snapshotu.
-
-> **Co zahrnuje:** −vlastní kapitál + nájem − úroky − opravy − mimořádné splátky  
-> **Co nezahrnuje:** hodnotu nemovitosti, daně z příjmu, ušlý výnos alternativní investice
-
-#### 2. Složení splátky: jistina vs. úroky
-Normalizované sloupce (100 %). Na začátku hypotéky tvoří úroky většinu každé splátky, ke konci naopak. Vizuálně ukazuje, kolik z vaší splátky skutečně snižuje dluh a kolik je čistý náklad.
-
-#### 3. Zbývající dluh a celkové úroky
-Dvě samostatné linie na stejné ose:
-- **Modrá (klesající)** — zbývající nesplacená jistina
-- **Červená (stoupající)** — kumulativní suma zaplacených úroků
-
-Průsečík těchto dvou čar říká: *„od tohoto roku jsi na úrocích zaplatil víc, než ještě dlužíš."*
-
-#### 4. Čistý výsledek po letech
-Sloupce za každý rok: `nájem − úroky − opravy`. Ikonka klíče označuje roky velké údržby. Červené sloupce = v daném roce jste dopláceli z vlastní kapsy.
-
-### Tabulka
-
-Rok po roku zobrazuje všechny výpočtené hodnoty:
-
-| Sloupec | Popis |
+| Card | Description |
 |---|---|
-| Rok | Číslo roku; klíč = rok velké údržby |
-| Úroky | Část splátky jako náklad (červeně) |
-| Mim. splátka | Mimořádná splátka jistiny, pokud byla zadána (fialově) |
-| Jistina | Část splátky snižující dluh |
-| Zbývající dluh | Nesplacená jistina na konci roku (oranžově) |
-| Příjmy z nájmu | Skutečný příjem daného roku (roste s inflací nájmu) |
-| Opravy | Celkové roční náklady na údržbu; tučně v roce velké opravy |
-| Čistý rok | Nájem − úroky − opravy |
-| Kumulativní | Celkový výsledek od začátku investice |
+| Paid to bank | Same as above |
+| Rental income | Same as above |
+| Tax | Cumulative tax paid (shown when tax is enabled) |
+| Rent − payments − tax | Positive = rent covers payments with surplus |
 
-## Výpočetní model
+### Charts
 
-### Anuitní splátka
-Měsíční splátka se počítá standardním vzorcem pro anuitu:
+Use the **Chart / Table** toggle in the right panel to switch views.
+
+#### 1. Cumulative net result
+A line chart showing the total investment result from day one. Red = in the red, green = in the black. An indigo vertical line marks the year selected in the snapshot slider.
+
+> **Includes:** −own capital + rent − interest − repairs − tax − extra payments  
+> **Excludes:** property value, alternative investment returns
+
+#### 2. Payment breakdown: principal vs. interest
+Normalised stacked bars (100 %). Early in the mortgage, interest dominates; it reverses towards the end. Shows how much of each payment actually reduces your debt vs. how much is pure cost.
+
+#### 3. Remaining debt and cumulative interest
+Two separate series on the same axis:
+- **Blue (declining)** — remaining unpaid principal
+- **Red (rising)** — cumulative interest paid to date
+
+The intersection means: *"from this year on, you have paid more in interest than you still owe."*
+
+#### 4. Annual net result
+One bar per year: `rent − interest − repairs − tax`. A wrench icon marks major maintenance years. Red bars = you topped up out of pocket that year.
+
+### Table
+
+Year-by-year view of all calculated values:
+
+| Column | Description |
+|---|---|
+| Year | Year number; 🔧 = major maintenance year, ↺ = refixation year |
+| Interest | Interest portion of payments (red) |
+| Extra payment | One-off principal payment if scheduled (purple) |
+| Principal | Debt-reducing portion of payments |
+| Remaining debt | Unpaid principal at year end (orange) |
+| Rental income | Actual income that year (grows with rent inflation) |
+| Tax | Income tax on rental earnings (purple) |
+| Repairs | Total annual maintenance cost; bold in major maintenance years |
+| Net year | Rent − interest − repairs − tax |
+| Cumulative | Total result from the start of the investment |
+
+### PDF export
+
+Tap **Export PDF** in the top bar of the right panel to generate a report. A sheet appears with a **Share / Save to Files** button that opens the system share sheet (AirDrop, Mail, Files, Print…).
+
+The PDF report includes:
+- Input parameters summary
+- Overall results (colour-coded cards)
+- All four charts in a 2 × 2 grid
+- Full year-by-year table
+
+## Calculation model
+
+### Annuity payment
+The monthly payment is calculated using the standard annuity formula:
 
 ```
 M = P × r × (1+r)^n / ((1+r)^n − 1)
 ```
 
-kde `P` = výše hypotéky, `r` = měsíční úroková sazba (`roční sazba / 12`), `n` = celkový počet měsíců.
+where `P` = mortgage amount, `r` = monthly interest rate (`annual rate / 12`), `n` = total number of months.
 
-### Roční příjem z nájmu
-Nájem roste každý rok geometricky:
-
-```
-nájem(rok) = měsíční_nájem × 12 × (1 + růst/100)^(rok−1)
-```
-
-### Kumulativní čistý výsledek
-Počáteční hodnota = −vlastní kapitál. Každý rok se přičítá:
+### Annual rental income
+Rent grows geometrically each year:
 
 ```
-Δ = příjem_z_nájmu − zaplacené_úroky − opravy − mimořádná_splátka
+rent(year) = monthly_rent × 12 × (1 + growth/100)^(year−1)
 ```
 
-Splátka jistiny (principalPaid) se **nezapočítává** — peníze neopouštějí váš majetek, pouze přecházejí z cashflow do vlastního kapitálu v nemovitosti.
+### Interest rate refixation
+At the start of the year following the fixed-rate period, the monthly payment is recalculated:
 
-### Mimořádné splátky
-Aplikují se vždy na konci roku po pravidelných splátkách. Nemohou přesáhnout zbývající jistinu. Po úplném splacení se generují roky bez splátek — čistý příjem = nájem − opravy.
+```
+new_payment = remaining_balance × r2 × (1+r2)^m / ((1+r2)^m − 1)
+```
 
-## Architektura kódu
+where `r2` = new monthly rate, `m` = remaining months.
+
+### Rental income tax
+Two modes available under Czech tax law (§ 9 Income Tax Act):
+
+- **Flat-rate expense 30 %:** taxable base = rental income × 70 %, tax = base × rate
+- **Actual costs:** taxable base = max(0, rent − interest − repairs), tax = base × rate
+
+### Cumulative net result
+Starting value = −own capital. Each year adds:
+
+```
+Δ = rental_income − interest_paid − repairs − tax − extra_payment
+```
+
+Principal repayment (`principalPaid`) is **not subtracted** — it does not leave your net worth, it merely shifts cash into equity in the property.
+
+### Extra payments
+Applied at the end of each year after regular payments. Capped at the remaining balance. Once the mortgage is paid off, subsequent years show no payments — net income = rent − repairs − tax.
+
+## Code architecture
 
 ```
 ContentView.swift
-├── ExtraPayment          — datová struktura pro mimořádnou splátku
-├── YearData              — výsledek pro jeden rok (read-only)
-├── MortgageViewModel     — @Observable; vstupy + veškerá výpočetní logika
-├── czk()                 — helper pro formátování částek v Kč
-├── ContentView           — kořenový view (NavigationSplitView)
-├── InputPanel            — levý panel, všechny slidery a vstupy
-├── SliderRow             — znovupoužitelný řádek se sliderovou kontrolou
-├── DetailPanel           — pravý panel, přepíná Graf ↔ Tabulka
-├── SnapshotHeader        — slider roku + dvě sady karet s kumulativními hodnotami
-├── SnapCard              — jednotlivá informační karta v SnapshotHeader
-├── ChartPanel            — ScrollView se čtyřmi grafy (Charts framework)
-└── YearTable             — Table view s amortizačním harmonogramem
+├── TaxMode               — enum: flat-rate expense vs. actual costs
+├── ExtraPayment          — one-off principal payment data structure
+├── YearData              — computed results for one year (read-only)
+├── MortgageViewModel     — @Observable; all inputs + calculation logic
+├── czk()                 — helper for formatting CZK amounts
+├── ContentView           — root view (NavigationSplitView)
+├── InputPanel            — left panel: all sliders and inputs
+├── SliderRow             — reusable slider row component
+├── DetailPanel           — right panel: Chart ↔ Table toggle + PDF export
+├── SnapshotHeader        — year slider + two sets of cumulative cards
+├── SnapCard              — individual info card in SnapshotHeader
+├── ChartPanel            — ScrollView with four charts (Charts framework)
+├── YearTable             — Table view with the amortisation schedule
+└── PDFReportView         — view rendered to PDF (parameters, charts, table)
 ```
 
-**Klíčová technická rozhodnutí:**
-- `@Observable` místo `ObservableObject` — vyžaduje iOS 17, eliminuje potřebu `@Published`
-- `series:` parametr v `LineMark` — nutný pro správné vykreslení více čar v jednom `Chart`; bez něj Charts spojuje body všech sérií do jedné a vzniká zubatý vzor
-- `chartForegroundStyleScale` — jedině tato metoda generuje legendu v grafu; přímé `.foregroundStyle(Color.X)` legendu nevytvoří
-- Amortizační harmonogram se vypočítává jako computed property (ne cache) — přepočet je dostatečně rychlý i při 30 letech × 12 měsíců = 360 iteracích
+**Key technical decisions:**
+- `@Observable` instead of `ObservableObject` — requires iOS 17, eliminates `@Published`
+- `series:` parameter on `LineMark` — required to keep multiple series separate in one `Chart`; without it, Charts connects all data points into a single jagged line
+- `chartForegroundStyleScale` — the only way to generate a chart legend; direct `.foregroundStyle(Color.X)` colours the marks but produces no legend entry
+- The amortisation schedule is a computed property (not cached) — fast enough at 30 years × 12 months = 360 iterations
+- PDF generation uses `ImageRenderer` → `cgImage` → `CGContext` PDF wrapper (no UIKit dependency)
 
-## Co aplikace nezohledňuje
+## What the app does not model
 
-- Daň z příjmu z nájmu
-- Pojištění nemovitosti a domácnosti
-- Poplatky za správu (realitní agentura)
-- Změnu úrokové sazby v průběhu fixace
-- Zhodnocení nebo znehodnocení nemovitosti v čase
-- Ušlý výnos z vlastního kapitálu (alternativní investice)
+- Property insurance
+- Property management fees (letting agent)
+- Property value appreciation or depreciation over time
+- Alternative investment return on own capital (opportunity cost)
