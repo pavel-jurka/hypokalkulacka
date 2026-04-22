@@ -9,7 +9,6 @@
 import SwiftUI
 import Charts
 import Observation
-import UIKit
 
 // MARK: - Enums
 
@@ -305,24 +304,25 @@ class MortgageViewModel {
     // MARK: PDF export
 
     /// Vygeneruje PDF report a vrátí URL dočasného souboru.
+    /// Používá ImageRenderer (SwiftUI) + CGContext (CoreGraphics) — bez UIKit.
     @MainActor
     func generatePDF() -> URL? {
         let reportView = PDFReportView(vm: self).frame(width: 794)
         let renderer = ImageRenderer(content: reportView)
         renderer.scale = 2.0
 
-        guard let image = renderer.uiImage else { return nil }
-
-        let pageRect = CGRect(origin: .zero, size: image.size)
-        let pdfRenderer = UIGraphicsPDFRenderer(bounds: pageRect)
-        let data = pdfRenderer.pdfData { ctx in
-            ctx.beginPage()
-            image.draw(in: pageRect)
-        }
-
         let url = URL.temporaryDirectory
             .appendingPathComponent("HypotecniKalkulacka_\(Int(Date().timeIntervalSince1970)).pdf")
-        try? data.write(to: url)
+
+        renderer.render { size, context in
+            var mediaBox = CGRect(origin: .zero, size: size)
+            guard let pdf = CGContext(url as CFURL, mediaBox: &mediaBox, nil) else { return }
+            pdf.beginPDFPage(nil)
+            context(pdf)
+            pdf.endPDFPage()
+            pdf.closePDF()
+        }
+
         return url
     }
 }
@@ -538,8 +538,8 @@ struct SliderRow: View {
 struct DetailPanel: View {
     @Bindable var vm: MortgageViewModel
     @State private var selectedTab = 0
+    /// Po generování drží URL pro ShareLink. Resetuje se při změně parametrů.
     @State private var pdfURL: URL?
-    @State private var showShare = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -559,15 +559,25 @@ struct DetailPanel: View {
 
                 Spacer()
 
-                // Export do PDF
-                Button {
-                    pdfURL = vm.generatePDF()
-                    if pdfURL != nil { showShare = true }
-                } label: {
-                    Label("Export PDF", systemImage: "square.and.arrow.up")
-                        .font(.subheadline)
+                // Krok 1: generuj PDF. Krok 2: ShareLink se zobrazí místo tlačítka.
+                if let url = pdfURL {
+                    ShareLink(item: url,
+                              preview: SharePreview(
+                                "HypotecniKalkulacka.pdf",
+                                icon: Image(systemName: "doc.richtext"))) {
+                        Label("Sdílet PDF", systemImage: "square.and.arrow.up.fill")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.borderedProminent)
+                } else {
+                    Button {
+                        pdfURL = vm.generatePDF()
+                    } label: {
+                        Label("Export PDF", systemImage: "square.and.arrow.up")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -580,12 +590,13 @@ struct DetailPanel: View {
                 YearTable(vm: vm)
             }
         }
-        .sheet(isPresented: $showShare) {
-            if let url = pdfURL {
-                ActivityView(items: [url])
-                    .presentationDetents([.medium, .large])
-            }
-        }
+        // Při změně klíčových parametrů invaliduj staré PDF
+        .onChange(of: vm.mortgageYears)    { pdfURL = nil }
+        .onChange(of: vm.interestRate)     { pdfURL = nil }
+        .onChange(of: vm.propertyPrice)    { pdfURL = nil }
+        .onChange(of: vm.monthlyRent)      { pdfURL = nil }
+        .onChange(of: vm.includeTax)       { pdfURL = nil }
+        .onChange(of: vm.useRefixation)    { pdfURL = nil }
     }
 }
 
@@ -1051,14 +1062,3 @@ private struct PDFCell: View {
     }
 }
 
-// MARK: - Activity View (Share Sheet)
-
-/// UIViewControllerRepresentable wrapper pro UIActivityViewController.
-/// Používá se pro sdílení PDF přes systémový share sheet.
-struct ActivityView: UIViewControllerRepresentable {
-    let items: [Any]
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
-}
