@@ -304,24 +304,26 @@ class MortgageViewModel {
     // MARK: PDF export
 
     /// Vygeneruje PDF report a vrátí URL dočasného souboru.
-    /// Používá ImageRenderer (SwiftUI) + CGContext (CoreGraphics) — bez UIKit.
+    /// Postup: ImageRenderer → CGImage (raster @2×) → vložení do PDF obálky přes CGContext.
+    /// Tento přístup je spolehlivý — renderer.render s PDF kontextem nemusí fungovat korektně.
     @MainActor
     func generatePDF() -> URL? {
         let reportView = PDFReportView(vm: self).frame(width: 794)
         let renderer = ImageRenderer(content: reportView)
         renderer.scale = 2.0
 
+        guard let cgImage = renderer.cgImage else { return nil }
+
+        let imageSize = CGSize(width: cgImage.width, height: cgImage.height)
         let url = URL.temporaryDirectory
             .appendingPathComponent("HypotecniKalkulacka_\(Int(Date().timeIntervalSince1970)).pdf")
 
-        renderer.render { size, context in
-            var mediaBox = CGRect(origin: .zero, size: size)
-            guard let pdf = CGContext(url as CFURL, mediaBox: &mediaBox, nil) else { return }
-            pdf.beginPDFPage(nil)
-            context(pdf)
-            pdf.endPDFPage()
-            pdf.closePDF()
-        }
+        var mediaBox = CGRect(origin: .zero, size: imageSize)
+        guard let pdf = CGContext(url as CFURL, mediaBox: &mediaBox, nil) else { return nil }
+        pdf.beginPDFPage(nil)
+        pdf.draw(cgImage, in: mediaBox)
+        pdf.endPDFPage()
+        pdf.closePDF()
 
         return url
     }
@@ -538,8 +540,8 @@ struct SliderRow: View {
 struct DetailPanel: View {
     @Bindable var vm: MortgageViewModel
     @State private var selectedTab = 0
-    /// Po generování drží URL pro ShareLink. Resetuje se při změně parametrů.
     @State private var pdfURL: URL?
+    @State private var showPDFSheet = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -559,25 +561,14 @@ struct DetailPanel: View {
 
                 Spacer()
 
-                // Krok 1: generuj PDF. Krok 2: ShareLink se zobrazí místo tlačítka.
-                if let url = pdfURL {
-                    ShareLink(item: url,
-                              preview: SharePreview(
-                                "HypotecniKalkulacka.pdf",
-                                icon: Image(systemName: "doc.richtext"))) {
-                        Label("Sdílet PDF", systemImage: "square.and.arrow.up.fill")
-                            .font(.subheadline)
-                    }
-                    .buttonStyle(.borderedProminent)
-                } else {
-                    Button {
-                        pdfURL = vm.generatePDF()
-                    } label: {
-                        Label("Export PDF", systemImage: "square.and.arrow.up")
-                            .font(.subheadline)
-                    }
-                    .buttonStyle(.bordered)
+                Button {
+                    pdfURL = vm.generatePDF()
+                    showPDFSheet = pdfURL != nil
+                } label: {
+                    Label("Export PDF", systemImage: "square.and.arrow.up")
+                        .font(.subheadline)
                 }
+                .buttonStyle(.bordered)
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -590,13 +581,37 @@ struct DetailPanel: View {
                 YearTable(vm: vm)
             }
         }
-        // Při změně klíčových parametrů invaliduj staré PDF
-        .onChange(of: vm.mortgageYears)    { pdfURL = nil }
-        .onChange(of: vm.interestRate)     { pdfURL = nil }
-        .onChange(of: vm.propertyPrice)    { pdfURL = nil }
-        .onChange(of: vm.monthlyRent)      { pdfURL = nil }
-        .onChange(of: vm.includeTax)       { pdfURL = nil }
-        .onChange(of: vm.useRefixation)    { pdfURL = nil }
+        .sheet(isPresented: $showPDFSheet) {
+            if let url = pdfURL {
+                VStack(spacing: 20) {
+                    Image(systemName: "doc.richtext.fill")
+                        .font(.system(size: 52))
+                        .foregroundStyle(.blue)
+                    Text("PDF je připraveno")
+                        .font(.title2).fontWeight(.semibold)
+                    Text("HypotecniKalkulacka.pdf")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    ShareLink(
+                        item: url,
+                        preview: SharePreview(
+                            "HypotecniKalkulacka.pdf",
+                            icon: Image(systemName: "doc.richtext.fill"))
+                    ) {
+                        Label("Sdílet / Uložit do souborů", systemImage: "square.and.arrow.up")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.horizontal)
+
+                    Button("Zavřít") { showPDFSheet = false }
+                        .foregroundStyle(.secondary)
+                }
+                .padding(32)
+                .presentationDetents([.height(320)])
+                .presentationDragIndicator(.visible)
+            }
+        }
     }
 }
 
@@ -988,7 +1003,7 @@ struct PDFReportView: View {
                 PDFCell("Čistý rok", width: 90, bold: true)
                 PDFCell("Kumulativní", width: 100, bold: true)
             }
-            .background(Color(.systemGray5))
+            .background(Color.secondary.opacity(0.15))
             .cornerRadius(4)
 
             // Řádky
@@ -1011,7 +1026,7 @@ struct PDFReportView: View {
                     PDFCell(czk(d.cumulativeNet, compact: true), width: 100,
                             color: d.cumulativeNet >= 0 ? .green : .red, bold: true)
                 }
-                .background(d.year % 2 == 0 ? Color(.systemGray6) : .clear)
+                .background(d.year % 2 == 0 ? Color.secondary.opacity(0.07) : .clear)
             }
         }
         .padding(32)
