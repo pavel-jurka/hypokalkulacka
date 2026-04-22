@@ -93,8 +93,8 @@ class MortgageViewModel {
     var ownCapitalPct: Double = 10
 
     // MARK: Vstupy — Hypotéka
-    var mortgageYears: Double = 20
-    var interestRate: Double = 4.5
+    var mortgageYears: Double = 30
+    var interestRate: Double = 5.4
 
     // MARK: Vstupy — Refixace
     /// Zapnutí/vypnutí simulace změny sazby po refixaci.
@@ -123,7 +123,11 @@ class MortgageViewModel {
     var selectedYear: Double = 10
 
     // MARK: Vstupy — Mimořádné splátky
-    var extraPayments: [ExtraPayment] = []
+    var extraPayments: [ExtraPayment] = {
+        var payments = [ExtraPayment(year: 1, amount: 1_000_000)]
+        payments += (2...14).map { ExtraPayment(year: $0, amount: 350_000) }
+        return payments
+    }()
     var newExtraYear: Int = 5
     var newExtraAmount: Double = 500_000
 
@@ -308,7 +312,7 @@ class MortgageViewModel {
     /// Tento přístup je spolehlivý — renderer.render s PDF kontextem nemusí fungovat korektně.
     @MainActor
     func generatePDF() -> URL? {
-        let reportView = PDFReportView(vm: self).frame(width: 794)
+        let reportView = PDFReportView(vm: self).frame(width: 1000)
         let renderer = ImageRenderer(content: reportView)
         renderer.scale = 2.0
 
@@ -919,7 +923,7 @@ struct YearTable: View {
 
 // MARK: - PDF Report View
 
-/// View renderovaný do PDF. Šířka 794 pt (A4 @ 96 dpi).
+/// View renderovaný do PDF. Šířka 1000 pt.
 struct PDFReportView: View {
     var vm: MortgageViewModel
 
