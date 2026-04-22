@@ -988,6 +988,118 @@ struct PDFReportView: View {
 
             Divider()
 
+            // Grafy ve dvou sloupcích
+            Text("GRAFY").font(.caption).fontWeight(.bold).foregroundStyle(.secondary)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+
+                // Graf 1: Kumulativní čistý výsledek
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Kumulativní čistý výsledek")
+                        .font(.caption).fontWeight(.semibold)
+                    Chart(vm.schedule) { d in
+                        AreaMark(x: .value("Rok", d.year), y: .value("Kč", d.cumulativeNet))
+                            .foregroundStyle(.linearGradient(
+                                colors: [.green.opacity(0.3), .clear],
+                                startPoint: .top, endPoint: .bottom))
+                        LineMark(x: .value("Rok", d.year), y: .value("Kč", d.cumulativeNet))
+                            .foregroundStyle(d.cumulativeNet >= 0 ? Color.green : Color.red)
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                    }
+                    .chartXAxis { AxisMarks(values: .stride(by: 5)) { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let y = v.as(Int.self) { Text("rok \(y)").font(.system(size: 7)) } }
+                    }}
+                    .chartYAxis { AxisMarks { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let val = v.as(Double.self) {
+                            Text(czk(val, compact: true)).font(.system(size: 7)) }}
+                    }}
+                    .frame(height: 160)
+                }
+
+                // Graf 2: Čistý výsledek po letech
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Čistý výsledek po letech")
+                        .font(.caption).fontWeight(.semibold)
+                    Chart(vm.schedule) { d in
+                        BarMark(x: .value("Rok", d.year), y: .value("Kč", d.netYear))
+                            .foregroundStyle(d.netYear >= 0 ? Color.green.opacity(0.8) : Color.red.opacity(0.8))
+                            .cornerRadius(2)
+                    }
+                    .chartXAxis { AxisMarks(values: .stride(by: 5)) { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let y = v.as(Int.self) { Text("rok \(y)").font(.system(size: 7)) } }
+                    }}
+                    .chartYAxis { AxisMarks { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let val = v.as(Double.self) {
+                            Text(czk(val, compact: true)).font(.system(size: 7)) }}
+                    }}
+                    .frame(height: 160)
+                }
+
+                // Graf 3: Složení splátky (amortizace)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Složení splátky: jistina vs. úroky")
+                        .font(.caption).fontWeight(.semibold)
+                    Chart(vm.schedule) { d in
+                        BarMark(x: .value("Rok", d.year), y: .value("Kč", d.principalPaid), stacking: .normalized)
+                            .foregroundStyle(Color.blue.opacity(0.75))
+                        BarMark(x: .value("Rok", d.year), y: .value("Kč", d.interestPaid), stacking: .normalized)
+                            .foregroundStyle(Color.red.opacity(0.75))
+                    }
+                    .chartXAxis { AxisMarks(values: .stride(by: 5)) { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let y = v.as(Int.self) { Text("rok \(y)").font(.system(size: 7)) } }
+                    }}
+                    .chartYAxis { AxisMarks(values: [0, 0.5, 1.0]) { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let val = v.as(Double.self) {
+                            Text("\(Int(val * 100)) %").font(.system(size: 7)) }}
+                    }}
+                    .frame(height: 160)
+                    HStack(spacing: 8) {
+                        Label("Jistina", systemImage: "rectangle.fill").foregroundStyle(.blue)
+                        Label("Úroky", systemImage: "rectangle.fill").foregroundStyle(.red)
+                    }
+                    .font(.system(size: 7))
+                }
+
+                // Graf 4: Zbývající dluh vs. kumulativní úroky
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Zbývající dluh a celkové úroky")
+                        .font(.caption).fontWeight(.semibold)
+                    Chart(vm.schedule) { d in
+                        AreaMark(x: .value("Rok", d.year), y: .value("Kč", d.remainingBalance),
+                                 series: .value("Typ", "Zbývající dluh"))
+                            .foregroundStyle(by: .value("Typ", "Zbývající dluh")).opacity(0.15)
+                        LineMark(x: .value("Rok", d.year), y: .value("Kč", d.remainingBalance),
+                                 series: .value("Typ", "Zbývající dluh"))
+                            .foregroundStyle(by: .value("Typ", "Zbývající dluh"))
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                        LineMark(x: .value("Rok", d.year), y: .value("Kč", d.cumulativeInterest),
+                                 series: .value("Typ", "Kumulativní úroky"))
+                            .foregroundStyle(by: .value("Typ", "Kumulativní úroky"))
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                    }
+                    .chartForegroundStyleScale(["Zbývající dluh": Color.blue, "Kumulativní úroky": Color.red])
+                    .chartLegend(position: .bottom, alignment: .leading)
+                    .chartXAxis { AxisMarks(values: .stride(by: 5)) { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let y = v.as(Int.self) { Text("rok \(y)").font(.system(size: 7)) } }
+                    }}
+                    .chartYAxis { AxisMarks { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let val = v.as(Double.self) {
+                            Text(czk(val, compact: true)).font(.system(size: 7)) }}
+                    }}
+                    .frame(height: 160)
+                }
+            }
+
+            Divider()
+
             // Tabulka rok po roku
             Text("PŘEHLED ROK PO ROKU").font(.caption).fontWeight(.bold).foregroundStyle(.secondary)
 
