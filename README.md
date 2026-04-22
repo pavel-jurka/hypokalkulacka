@@ -11,21 +11,27 @@ An iPad app for simulating a property investment financed by a mortgage. Model t
 
 ### Inputs (left panel)
 
-| Section | Parameter | Default value |
-|---|---|---|
-| Property | Purchase price | 12,875,000 CZK |
-| Property | Own capital | 10 % (1,287,500 CZK) |
-| Mortgage | Duration | 20 years |
-| Mortgage | Interest rate | 4.50 % |
-| Income | Monthly rent | 30,000 CZK |
-| Income | Annual rent growth | 2.00 % |
-| Repairs | Annual maintenance | 130,000 CZK |
-| Repairs | Major maintenance every N years | 10 years / 300,000 CZK |
+| Section | Parameter | Default value | Range |
+|---|---|---|---|
+| Property | Purchase price | 12,875,000 CZK | 1 M – 30 M |
+| Property | Own capital | 10 % (1,287,500 CZK) | 5 – 50 % |
+| Mortgage | Duration | 20 years | 5 – 30 |
+| Mortgage | Interest rate | 4.50 % | 0.5 – 10 % |
+| Mortgage | Rate after refixation *(optional)* | 5.00 % | 0.5 – 12 % |
+| Mortgage | End of fixed period *(optional)* | year 5 | 1 – (duration−1) |
+| Income | Monthly rent | 30,000 CZK | 10 k – 80 k |
+| Income | Annual rent growth | 2.00 % | 0 – 8 % |
+| Tax | Tax rate *(optional)* | 15 % | 10 – 25 % |
+| Repairs | Annual maintenance | 130,000 CZK | 0 – 300 k |
+| Repairs | Major maintenance every N years | 10 years / 300,000 CZK | 2–20 yrs / 50 k–1 M |
 
 All values are controlled by sliders — any change instantly recalculates the full schedule.
 
 The app continuously displays:
-- **Monthly payment** (calculated from the formula, not editable directly)
+- **Monthly payment** — calculated from the annuity formula, updates live
+- **Monthly payment after refixation** — shown when refixation is enabled
+- **Total tax over full term** — shown when tax is enabled
+- **Payoff year** — shown when extra payments pay off the mortgage early
 - **Break-even year** — the first year the cumulative net result turns positive
 - **Net result over the full mortgage term**
 
@@ -63,26 +69,26 @@ The tax rate slider defaults to 15 % (standard Czech rate). Tax is subtracted fr
 
 ### Snapshot (cumulative overview at a selected year)
 
-The slider at the top of the right panel lets you "travel in time" — drag it to any year and instantly see cumulative values up to that point.
+The slider at the top of the right panel lets you "travel in time" — drag it to any year and instantly see cumulative values up to that point in two rows of cards.
 
-**Including own capital:**
+**Row 1 — Including own capital** (investor's perspective):
 
 | Card | Description |
 |---|---|
-| Total payments | Sum of all regular + extra payments |
-| of which interest | How much of the above was pure interest cost |
+| Total payments | Sum of all regular + extra payments sent to the bank |
+| of which interest | How much of the above was pure interest (sunk cost) |
 | Remaining debt | Unpaid principal at the end of the selected year |
 | Rental income | Cumulative rental income (with annual growth) |
-| Net result | Result including the initial own-capital outlay |
+| Net result | Starts at −own capital; each year adds rent − interest − repairs − tax |
 
-**Excluding own capital (pure cash flow, after tax):**
+**Row 2 — Excluding own capital** (pure cash flow, after tax):
 
 | Card | Description |
 |---|---|
-| Paid to bank | Same as above |
-| Rental income | Same as above |
-| Tax | Cumulative tax paid (shown when tax is enabled) |
-| Rent − payments − tax | Positive = rent covers payments with surplus |
+| Paid to bank | Cumulative mortgage payments (regular + extra) |
+| Rental income | Cumulative rental income |
+| Tax | Cumulative tax paid *(shown only when tax is enabled)* |
+| Rent − payments − tax | Positive = rental income covers all mortgage payments with surplus |
 
 ### Charts
 
@@ -95,7 +101,7 @@ A line chart showing the total investment result from day one. Red = in the red,
 > **Excludes:** property value, alternative investment returns
 
 #### 2. Payment breakdown: principal vs. interest
-Normalised stacked bars (100 %). Early in the mortgage, interest dominates; it reverses towards the end. Shows how much of each payment actually reduces your debt vs. how much is pure cost.
+Normalised stacked bars (100 %). Early in the mortgage, interest dominates; it reverses towards the end. Shows how much of each payment actually reduces your debt vs. how much is pure cost. If refixation is enabled, a vertical indigo line marks the year the rate changes.
 
 #### 3. Remaining debt and cumulative interest
 Two separate series on the same axis:
@@ -208,7 +214,9 @@ ContentView.swift
 
 ## What the app does not model
 
-- Property insurance
-- Property management fees (letting agent)
+- Property insurance and home contents insurance
+- Property management fees (letting agent commission)
 - Property value appreciation or depreciation over time
 - Alternative investment return on own capital (opportunity cost)
+- Vacancy periods (months without a tenant)
+- Depreciation allowance as a tax deduction
