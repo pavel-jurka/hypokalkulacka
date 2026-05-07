@@ -9,7 +9,7 @@ struct ScenarioManagerView: View {
     @State private var compareA: MortgageScenario?
     @State private var compareB: MortgageScenario?
 
-    private var store: ScenarioStore { .shared }
+    var store = ScenarioStore.shared
 
     var body: some View {
         NavigationStack {

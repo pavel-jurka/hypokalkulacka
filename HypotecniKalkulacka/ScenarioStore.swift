@@ -139,13 +139,12 @@ extension MortgageScenario {
 // MARK: - Scenario Store
 
 /// Persistentní úložiště scénářů (UserDefaults).
+/// didSet nefunguje spolehlivě s @Observable — save() se volá explicitně.
 @Observable
 class ScenarioStore {
     static let shared = ScenarioStore()
 
-    var scenarios: [MortgageScenario] = [] {
-        didSet { save() }
-    }
+    var scenarios: [MortgageScenario] = []
 
     private let key = "savedScenarios"
 
@@ -155,10 +154,12 @@ class ScenarioStore {
 
     func add(_ scenario: MortgageScenario) {
         scenarios.append(scenario)
+        save()
     }
 
     func remove(id: UUID) {
         scenarios.removeAll { $0.id == id }
+        save()
     }
 
     private func save() {
