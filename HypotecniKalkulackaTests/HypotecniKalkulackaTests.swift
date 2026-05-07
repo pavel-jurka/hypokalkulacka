@@ -1,6 +1,7 @@
 /// Unit testy pro výpočetní logiku hypoteční kalkulačky.
 /// Pokrývají anuitní splátku, amortizaci, daň, edge cases i finanční přesnost.
 
+import Foundation
 import Testing
 @testable import HypotecniKalkulacka
 
