@@ -3,7 +3,10 @@
 import Foundation
 
 /// Uložený pojmenovaný scénář — snapshot všech vstupních parametrů.
-struct MortgageScenario: Codable, Identifiable {
+struct MortgageScenario: Codable, Identifiable, Hashable {
+    static func == (lhs: MortgageScenario, rhs: MortgageScenario) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+
     var id = UUID()
     var name: String
     var createdAt: Date = Date()
