@@ -174,6 +174,8 @@ Views/
 - `MortgageInputs` struct slouzi jako snapshot pro predani do engine — oddeluje UI stav od vypoctu
 - `PBXFileSystemSynchronizedRootGroup` — nove soubory v adresari (vcetne subadresaru) se automaticky zkompilují
 - `@Observable` + `didSet` je **nespolehlivy** — vzdy volat side-effecty explicitne v metodach
+- Testy pouzivaji **XCTest** (ne Swift Testing) — univerzalni kompatibilita se vsemi Xcode verzemi
+- CI builduje na **macOS destination** (ne iOS Simulator — neni na GitHub Actions runneru)
 - SwiftUI `Table` ma **limit 10 sloupcu** — proto jsou opravy + provoz slouceny do "Naklady"
 
 ## UI jazyk
@@ -235,7 +237,7 @@ HypotecniKalkulacka/
 │   │   └── ScenarioManagerView.swift   — sprava scenaru
 │   └── Assets.xcassets/                — ikona aplikace + barvy
 ├── HypotecniKalkulackaTests/
-│   └── HypotecniKalkulackaTests.swift  — 45+ unit testu (ViewModel + Engine)
+│   └── HypotecniKalkulackaTests.swift  — 45+ unit testu (XCTest, ViewModel + Engine)
 ├── HypotecniKalkulackaUITests/
 ├── README.md                           — anglicky popis projektu
 └── CLAUDE.md                           — tento soubor (projekt kontext pro Claude Code)

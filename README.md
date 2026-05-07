@@ -138,19 +138,24 @@ Comprehensive unit tests covering:
 - **Snapshot** — year selection, opportunity cost, inflation discount
 - **Edge cases** — min/max values, all features enabled simultaneously
 - **Financial precision** — known reference values, payment composition over time
+- **CalculationEngine direct** — pure engine functions tested independently of ViewModel
+
+Framework: **XCTest** (universal Xcode compatibility).
 
 Run tests:
 ```bash
 xcodebuild test \
   -scheme HypotecniKalkulacka \
-  -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M4)'
+  -destination 'platform=macOS' \
+  -only-testing:HypotecniKalkulackaTests
 ```
 
 ## CI/CD
 
-GitHub Actions workflow runs on every push and PR to `main`:
-- **Build** — compile the full project
-- **Test** — run all unit tests
+GitHub Actions workflow (`.github/workflows/build-and-test.yml`) runs on every push and PR to `main`:
+- **Build** — compile on macOS destination
+- **Test** — run unit tests (XCTest, macOS target)
+- Runner: `macos-15`, Xcode 16, Node.js 24
 
 ## What the App Does Not Model
 
