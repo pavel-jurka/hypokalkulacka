@@ -15,11 +15,13 @@ Unlike standard mortgage calculators, this app models:
 
 ## Screenshots
 
-| Input panel | Charts | Snapshot & comparison |
-|---|---|---|
-| ![Input](screenshots/input-panel.png) | ![Charts](screenshots/charts.png) | ![Snapshot](screenshots/snapshot.png) |
+**Full app — inputs, snapshot cards, amortization table:**
 
-> Screenshots coming soon. Run the app in Xcode to see the full UI.
+![Full app](screenshots/full-app.png)
+
+| Input panel | Charts | Snapshot cards |
+|---|---|---|
+| ![Input](screenshots/input-panel.png) | ![Charts](screenshots/charts.png) | ![Snapshot](screenshots/snapshot-cards.png) |
 
 ## Why iPad?
 
@@ -150,7 +152,7 @@ GitHub Actions on every push/PR to `main`: build + unit tests (macOS 15, Xcode 1
 
 ## Roadmap
 
-- [ ] Screenshots in README
+- [x] Screenshots in README
 - [ ] iCloud scenario sync
 - [ ] Monte Carlo stress testing (rate hikes, rent drops, vacancy spikes)
 - [ ] Monthly cash flow granularity
