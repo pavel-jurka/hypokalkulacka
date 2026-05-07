@@ -14,22 +14,36 @@ Built for real-world decision making, not just a demo calculator.
 
 ## Architecture
 
+Separated into domain, engine, viewmodel, and views:
+
 ```
-ContentView.swift (~1,450 lines)
-├── TaxMode               — enum: flat-rate vs. actual costs
-├── ExtraPayment          — one-off principal payment (manual or auto-generated)
-├── YearData              — computed results for one year (immutable struct)
-├── MortgageViewModel     — @Observable; inputs + calculation engine
-│   ├── schedule          — computed amortization schedule [YearData]
-│   ├── autoExtraPayments — computed: rent-as-payments (reactive)
-│   └── computeTax()      — Czech tax law § 9 ZDP
-├── ContentView           — NavigationSplitView root
-├── InputPanel            — left panel: all inputs as sliders/toggles
-├── DetailPanel           — right panel: charts/table + PDF export
-├── SnapshotHeader        — year slider + cumulative overview cards
-├── ChartPanel            — 4 interactive charts (Swift Charts)
-├── YearTable             — full amortization schedule table
-└── PDFReportView         — rendered to PDF via ImageRenderer
+FinancialTypes.swift (~40 lines)
+└── CZK, Percent, Years, Months typealiases + czk() formatter
+
+Models.swift (~150 lines)
+├── TaxMode             — enum: flat-rate vs. actual costs (Codable)
+├── ExtraPayment        — one-off principal payment (manual or auto-generated)
+├── YearData            — computed results for one year (immutable struct)
+└── MortgageInputs      — snapshot of all parameters for CalculationEngine
+
+CalculationEngine.swift (~220 lines)
+├── monthlyPayment()           — annuity formula
+├── monthlyPaymentAfterRefix() — post-refixation payment
+├── computeTax()               — Czech tax law § 9 ZDP
+├── autoExtraPayments()        — rent-as-payments simulation
+└── computeSchedule()          — full year-by-year amortization
+
+MortgageViewModel.swift (~205 lines)
+└── @Observable ViewModel — UI state + delegation to CalculationEngine
+
+ContentView.swift (~1,000 lines)
+├── ContentView      — NavigationSplitView root
+├── InputPanel       — left panel: all inputs as sliders/toggles
+├── DetailPanel      — right panel: charts/table + PDF export
+├── SnapshotHeader   — year slider + cumulative overview cards
+├── ChartPanel       — 4 interactive charts (Swift Charts)
+├── YearTable        — full amortization schedule table
+└── PDFReportView    — rendered to PDF via ImageRenderer
 ```
 
 **Key design decisions:**
@@ -37,13 +51,15 @@ ContentView.swift (~1,450 lines)
 | Decision | Why |
 |---|---|
 | `@Observable` (not `ObservableObject`) | Eliminates `@Published` boilerplate, cleaner reactivity. Requires iOS 17. |
-| Single file | All logic + UI in one place. Fast iteration, easy to search. No premature abstraction. |
+| Separated domain layer | `CalculationEngine` is pure (no SwiftUI), fully testable independently. `MortgageInputs` struct decouples UI state from computation. |
+| Financial typealiases | `CZK`, `Percent`, `Years`, `Months` — semantic clarity without breaking SwiftUI bindings. |
 | Computed `schedule` | Recalculates on every input change. 30 years × 12 months = 360 iterations — instant. |
 | Computed `autoExtraPayments` | Reactive to all input changes (rent, vacancy, rate...). No stale state. |
 | `series:` on `LineMark` | Required to keep multiple chart series separate. Without it, Charts connects all points into one jagged line. |
 | `chartForegroundStyleScale` | Only way to generate a legend in Swift Charts. |
 | PDF via `ImageRenderer → cgImage → CGContext` | Reliable cross-platform approach. No UIKit dependency. |
 | SwiftUI `Table` 10-column limit | Repairs + operating costs merged into single "Náklady" column. |
+| `PBXFileSystemSynchronizedRootGroup` | New files in the directory are auto-compiled — no need to edit pbxproj. |
 
 ## Features
 
@@ -144,15 +160,19 @@ GitHub Actions workflow runs on every push and PR to `main`:
 ```
 HypotecniKalkulacka/
 ├── .github/workflows/
-│   └── build-and-test.yml          — CI: build + test on push/PR
+│   └── build-and-test.yml              — CI: build + test on push/PR
 ├── HypotecniKalkulacka/
-│   ├── HypotecniKalkulackaApp.swift — entry point (@main)
-│   ├── ContentView.swift            — all logic + UI (~1,450 lines)
-│   └── Assets.xcassets/             — app icon + colors
+│   ├── HypotecniKalkulackaApp.swift    — entry point (@main)
+│   ├── FinancialTypes.swift            — CZK, Percent, Years, Months + formatter
+│   ├── Models.swift                    — domain models (no SwiftUI dependency)
+│   ├── CalculationEngine.swift         — pure calculation functions
+│   ├── MortgageViewModel.swift         — @Observable ViewModel
+│   ├── ContentView.swift               — all SwiftUI views (~1,000 lines)
+│   └── Assets.xcassets/                — app icon + colors
 ├── HypotecniKalkulackaTests/
-│   └── HypotecniKalkulackaTests.swift — 35+ unit tests
-├── README.md                        — this file
-└── CLAUDE.md                        — AI assistant project context
+│   └── HypotecniKalkulackaTests.swift  — 45+ unit tests (ViewModel + Engine)
+├── README.md                           — this file
+└── CLAUDE.md                           — AI assistant project context
 ```
 
 ## License
