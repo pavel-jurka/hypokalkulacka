@@ -15,7 +15,19 @@ Unlike standard mortgage calculators, this app models:
 
 ## Screenshots
 
-> *TODO: Add 3–4 screenshots (input panel, charts, snapshot cards, scenario comparison)*
+| Input panel | Charts | Snapshot & comparison |
+|---|---|---|
+| ![Input](screenshots/input-panel.png) | ![Charts](screenshots/charts.png) | ![Snapshot](screenshots/snapshot.png) |
+
+> Screenshots coming soon. Run the app in Xcode to see the full UI.
+
+## Why iPad?
+
+Investment scenario analysis benefits from screen real estate:
+- **Side-by-side layout** — inputs on the left, results on the right, instant feedback
+- **Large charts** — 4 detailed financial charts without scrolling
+- **Full table visibility** — 10-column amortization schedule at a glance
+- **Touch-friendly sliders** — drag to explore "what if" scenarios naturally
 
 ## Quick Start
 
@@ -75,9 +87,7 @@ graph TD
     Store --> Models
 ```
 
-The calculation engine has **zero SwiftUI dependency** — pure static functions that accept `MortgageInputs` and return `[YearData]`. Fully testable independently.
-
-Financial types (`CZK`, `Percent`, `Years`, `Months`) are typealiases — semantic clarity without breaking SwiftUI bindings.
+All financial calculations are **deterministic pure functions** — no SwiftUI dependency, no side effects, no shared state. The engine accepts `MortgageInputs`, returns `[YearData]`. Fully testable in isolation.
 
 <details>
 <summary>Detailed file structure</summary>
@@ -87,23 +97,15 @@ MortgageCalculator/
 ├── .github/workflows/
 │   └── build-and-test.yml              — CI: build + test on push/PR
 ├── MortgageCalculator/
-│   ├── MortgageCalculatorApp.swift     — entry point (@main)
+│   ├── MortgageCalculatorApp.swift     — entry point
 │   ├── FinancialTypes.swift            — CZK, Percent, Years, Months + formatter
 │   ├── Models.swift                    — TaxMode, ExtraPayment, YearData, MortgageInputs
 │   ├── CalculationEngine.swift         — pure calculation functions (~220 lines)
-│   ├── MortgageViewModel.swift         — @Observable ViewModel (~205 lines)
+│   ├── MortgageViewModel.swift         — Observable ViewModel (~205 lines)
 │   ├── ScenarioStore.swift             — save/load scenarios (UserDefaults)
 │   ├── ContentView.swift               — root view (21 lines)
-│   └── Views/
-│       ├── InputPanel.swift            — left panel with all inputs
-│       ├── DetailPanel.swift           — right panel container
-│       ├── SnapshotHeader.swift        — cumulative overview cards
-│       ├── ChartPanel.swift            — 4 interactive charts
-│       ├── YearTable.swift             — amortization table
-│       ├── PDFReportView.swift         — PDF generation
-│       └── ScenarioManagerView.swift   — save/load/compare scenarios
+│   └── Views/                          — 7 focused view files
 ├── MortgageCalculatorTests/            — 45+ unit tests (XCTest)
-├── README.md
 └── CLAUDE.md                           — AI assistant context
 ```
 
@@ -116,17 +118,24 @@ MortgageCalculator/
 |---|---|
 | `@Observable` (not `ObservableObject`) | Eliminates `@Published` boilerplate, cleaner reactivity |
 | Separated domain layer | Engine is pure, testable independently. `MortgageInputs` decouples UI from computation |
-| Financial typealiases | Semantic clarity without wrapper complexity |
 | Computed `schedule` | Reactive to every input change. 360 iterations = instant |
 | XCTest (not Swift Testing) | Universal Xcode compatibility for CI |
-| PDF via `ImageRenderer` → `cgImage` → `CGContext` | No UIKit dependency |
-| `@Observable` + explicit `save()` | `didSet` is unreliable with `@Observable` macro |
+| PDF via `ImageRenderer` | No UIKit dependency |
+| Explicit `save()` in ScenarioStore | `didSet` is unreliable with `@Observable` macro |
 
 </details>
 
 ## Testing
 
-45+ unit tests covering annuity formula, amortization invariants, tax computation (both modes), refixation, extra payments (reactivity, capping, rent growth), operating costs, property appreciation, snapshot values, edge cases, financial precision with known reference values, and direct CalculationEngine tests.
+45+ unit tests (XCTest):
+
+- Annuity correctness (standard, zero-rate, known reference values)
+- Amortization invariants (balance, monotonicity, principal + interest = payment)
+- Tax logic (both Czech modes, full deductions)
+- Refixation, extra payments, auto-payment reactivity
+- Operating costs, appreciation, snapshot values
+- Edge cases and financial precision
+- Direct CalculationEngine tests (independent of ViewModel)
 
 ```bash
 xcodebuild test \
@@ -137,7 +146,7 @@ xcodebuild test \
 
 ## CI/CD
 
-GitHub Actions on every push/PR to `main`: build + unit tests on macOS 15, Xcode 16, Node.js 24.
+GitHub Actions on every push/PR to `main`: build + unit tests (macOS 15, Xcode 16).
 
 ## Roadmap
 
@@ -159,4 +168,4 @@ GitHub Actions on every push/PR to `main`: build + unit tests on macOS 15, Xcode
 
 ## License
 
-Private project.
+Source available for reference and learning. Not licensed for redistribution.
