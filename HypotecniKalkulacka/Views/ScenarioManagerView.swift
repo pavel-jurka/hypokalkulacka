@@ -12,25 +12,38 @@ struct ScenarioManagerView: View {
     var store = ScenarioStore.shared
 
     var body: some View {
-        NavigationStack {
-            List {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Scénáře").font(.title2).fontWeight(.bold)
+                Spacer()
+                Button("Zavřít") { dismiss() }
+            }
+            .padding()
+
+            Divider()
+
+            Form {
                 // MARK: Uložit aktuální
-                Section {
+                Section("Uložit aktuální nastavení") {
                     HStack {
                         TextField("Název scénáře", text: $newName)
-                        Button("Uložit") {
+                            .textFieldStyle(.roundedBorder)
+                        Button {
                             guard !newName.isEmpty else { return }
                             store.add(MortgageScenario(name: newName, vm: vm))
                             newName = ""
+                        } label: {
+                            Label("Uložit", systemImage: "square.and.arrow.down")
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(newName.isEmpty)
                     }
-                } header: { Text("Uložit aktuální nastavení") }
+                }
 
                 // MARK: Porovnání
                 if store.scenarios.count >= 2 {
-                    Section {
+                    Section("Porovnání scénářů") {
                         Picker("Scénář A", selection: $compareA) {
                             Text("Vyberte").tag(nil as MortgageScenario?)
                             ForEach(store.scenarios) { s in
@@ -47,56 +60,55 @@ struct ScenarioManagerView: View {
                         if let a = compareA, let b = compareB, a.id != b.id {
                             ScenarioComparisonView(a: a, b: b)
                         }
-                    } header: { Text("Porovnání scénářů") }
+                    }
                 }
 
                 // MARK: Uložené scénáře
-                Section {
+                Section("Uložené scénáře (\(store.scenarios.count))") {
                     if store.scenarios.isEmpty {
-                        Text("Žádné uložené scénáře")
+                        Text("Žádné uložené scénáře. Zadejte název a klepněte na Uložit.")
                             .foregroundStyle(.secondary)
+                            .font(.subheadline)
                     }
                     ForEach(store.scenarios) { scenario in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(scenario.name).fontWeight(.semibold)
-                                    Text("\(czk(scenario.propertyPrice)) · \(String(format: "%.2f %%", scenario.interestRate)) · \(Int(scenario.mortgageYears)) let")
-                                        .font(.caption).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text(czk(scenario.finalBalance, compact: true))
-                                        .fontWeight(.bold)
-                                        .foregroundStyle(scenario.finalBalance >= 0 ? .green : .red)
-                                    Text("splátka \(czk(scenario.monthlyPayment, compact: true))")
-                                        .font(.caption).foregroundStyle(.secondary)
-                                }
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(scenario.name).fontWeight(.semibold)
+                                Text("\(czk(scenario.propertyPrice, compact: true)) · \(String(format: "%.2f %%", scenario.interestRate)) · \(Int(scenario.mortgageYears)) let")
+                                    .font(.caption).foregroundStyle(.secondary)
                             }
-                            HStack(spacing: 12) {
-                                Button("Načíst") {
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text(czk(scenario.finalBalance, compact: true))
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(scenario.finalBalance >= 0 ? .green : .red)
+                                Text("splátka \(czk(scenario.monthlyPayment, compact: true))")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            VStack(spacing: 8) {
+                                Button {
                                     scenario.apply(to: vm)
                                     dismiss()
+                                } label: {
+                                    Image(systemName: "arrow.down.doc")
                                 }
-                                .font(.caption).buttonStyle(.bordered)
+                                .buttonStyle(.bordered).tint(.blue)
 
-                                Button("Smazat", role: .destructive) {
+                                Button(role: .destructive) {
                                     store.remove(id: scenario.id)
+                                } label: {
+                                    Image(systemName: "trash")
                                 }
-                                .font(.caption).buttonStyle(.bordered)
+                                .buttonStyle(.bordered).tint(.red)
                             }
                         }
                         .padding(.vertical, 4)
                     }
-                } header: { Text("Uložené scénáře (\(store.scenarios.count))") }
-            }
-            .navigationTitle("Scénáře")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Zavřít") { dismiss() }
                 }
             }
+            .formStyle(.grouped)
         }
+        .presentationDetents([.large])
     }
 }
 
@@ -108,20 +120,22 @@ struct ScenarioComparisonView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            CompareRow("Cena nemovitosti", czk(a.propertyPrice, compact: true), czk(b.propertyPrice, compact: true))
+            HStack {
+                Text(a.name).font(.caption).fontWeight(.bold).frame(maxWidth: .infinity)
+                Text("").frame(width: 100)
+                Text(b.name).font(.caption).fontWeight(.bold).frame(maxWidth: .infinity)
+            }
+
+            Divider()
+
+            CompareRow("Cena", czk(a.propertyPrice, compact: true), czk(b.propertyPrice, compact: true))
             CompareRow("Úrok", String(format: "%.2f %%", a.interestRate), String(format: "%.2f %%", b.interestRate))
             CompareRow("Délka", "\(Int(a.mortgageYears)) let", "\(Int(b.mortgageYears)) let")
             CompareRow("Splátka", czk(a.monthlyPayment, compact: true), czk(b.monthlyPayment, compact: true))
             CompareRow("Nájem", czk(a.monthlyRent, compact: true), czk(b.monthlyRent, compact: true))
-            CompareRow("Celkem úroky", czk(a.totalInterest, compact: true), czk(b.totalInterest, compact: true))
+            CompareRow("Úroky celkem", czk(a.totalInterest, compact: true), czk(b.totalInterest, compact: true))
 
             Divider()
-
-            HStack {
-                Text(a.name).font(.caption).fontWeight(.semibold).frame(maxWidth: .infinity)
-                Text("vs").font(.caption2).foregroundStyle(.secondary)
-                Text(b.name).font(.caption).fontWeight(.semibold).frame(maxWidth: .infinity)
-            }
 
             HStack {
                 Text(czk(a.finalBalance, compact: true))
@@ -130,8 +144,13 @@ struct ScenarioComparisonView: View {
                     .frame(maxWidth: .infinity)
 
                 let diff = b.finalBalance - a.finalBalance
-                Text((diff >= 0 ? "+" : "") + czk(diff, compact: true))
-                    .font(.caption).foregroundStyle(diff >= 0 ? .green : .red)
+                VStack {
+                    Text("Čistý výsledek").font(.caption2).foregroundStyle(.secondary)
+                    Text((diff >= 0 ? "+" : "") + czk(diff, compact: true))
+                        .font(.caption).fontWeight(.semibold)
+                        .foregroundStyle(diff >= 0 ? .green : .red)
+                }
+                .frame(width: 100)
 
                 Text(czk(b.finalBalance, compact: true))
                     .fontWeight(.bold)
@@ -159,7 +178,7 @@ private struct CompareRow: View {
     var body: some View {
         HStack {
             Text(valueA).font(.caption).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
-            Text(label).font(.caption2).foregroundStyle(.secondary).frame(width: 100)
+            Text(label).font(.caption2).foregroundStyle(.secondary).frame(width: 100, alignment: .center)
             Text(valueB).font(.caption).monospacedDigit().frame(maxWidth: .infinity, alignment: .leading)
         }
     }
