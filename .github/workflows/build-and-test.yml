@@ -19,12 +19,12 @@ jobs:
         run: |
           xcodebuild build \
             -scheme HypotecniKalkulacka \
-            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+            -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Test
         run: |
           xcodebuild test \
             -scheme HypotecniKalkulacka \
-            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+            -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO
