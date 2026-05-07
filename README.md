@@ -15,9 +15,13 @@ Unlike standard mortgage calculators, this app models:
 
 ## Screenshots
 
-**Full app — inputs, snapshot cards, amortization table:**
+**Full app — inputs, snapshot cards, interactive charts:**
 
-![Full app](screenshots/full-app.png)
+![Full app with charts](screenshots/full-app-charts.png)
+
+**Full app — amortization table view:**
+
+![Full app with table](screenshots/full-app.png)
 
 | Input panel | Charts | Snapshot cards |
 |---|---|---|
