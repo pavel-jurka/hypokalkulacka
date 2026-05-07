@@ -57,7 +57,7 @@ Pure staticke funkce — **zadna zavislost na SwiftUI ani Observation**:
 | Nemovitost | Cena nemovitosti | 9 900 000 Kc | 1 M – 30 M |
 | Nemovitost | Vlastni kapital | 10 % | 5 – 50 % |
 | Nemovitost | Rekonstrukce (toggle) | vyp | 0 – 2 000 000 Kc, default 1 M |
-| Nemovitost | Zhodnoceni nemovitosti (toggle) | vyp | 0 – 10 %/rok, default 3 % |
+| Nemovitost | Zhodnoceni/znehodnoceni (toggle) | vyp | -5 – 10 %/rok, default 3 % |
 | Hypoteka | Delka | 30 let | 5 – 30 |
 | Hypoteka | Urokova sazba | 4,79 % | 0,5 – 10 % |
 | Hypoteka | Refixace (toggle) | vyp | sazba 0,5–12 %, rok 1–(delka-1) |
@@ -130,21 +130,29 @@ Pure staticke funkce — **zadna zavislost na SwiftUI ani Observation**:
 - **Radek 2** (investicni pohled, volitelny): hodnota nemovitosti, celkovy vysledek, alternativni vynos, realna hodnota — zobrazuje se jen pokud je zapnuto zhodnoceni/oportunitni/inflace
 - **Radek 3** (bez vlastniho kapitalu): splatky bance, prijmy z najmu, dan (volitelne), najem − splatky − dan
 
-### Views (vse v ContentView.swift)
+### Views (kazdy v samostatnem souboru v Views/)
 ```
-ContentView           — NavigationSplitView (levy + pravy panel)
-├── InputPanel        — levy panel: Nemovitost → Hypoteka → Celkovy vysledek → Mimoradne splatky → Najem → Provoz → Dan → Opravy → Srovnani
-│   └── SliderRow     — reusable slider komponenta
-├── DetailPanel       — pravy panel: Chart/Tabulka toggle + PDF export
-│   ├── SnapshotHeader — slider roku + tri sady kumulativnich karet
-│   │   └── SnapCard   — jednotliva info karta
-│   ├── ChartPanel     — ScrollView se 4 grafy (Charts framework)
-│   └── YearTable      — Table view s amortizacnim harmonogramem (max 10 sloupcu)
-└── PDFReportView      — view renderovany do PDF
-    ├── PDFParam       — radek parametru v PDF
-    ├── PDFResult      — karta vysledku v PDF
-    └── PDFCell        — bunka tabulky v PDF
+ContentView.swift              — root NavigationSplitView (21 radku)
+Views/
+├── InputPanel.swift           — levy panel: Scenare → Nemovitost → Hypoteka → Celkovy vysledek → Mimoradne splatky → Najem → Dan → Provoz → Opravy → Srovnani
+│   └── SliderRow              — reusable slider komponenta
+├── DetailPanel.swift          — pravy panel: Chart/Tabulka toggle + PDF export
+├── SnapshotHeader.swift       — slider roku + tri sady kumulativnich karet + SnapCard
+├── ChartPanel.swift           — ScrollView se 4 grafy (Charts framework)
+├── YearTable.swift            — Table view s amortizacnim harmonogramem (max 10 sloupcu)
+├── PDFReportView.swift        — view renderovany do PDF + PDFParam/PDFResult/PDFCell
+└── ScenarioManagerView.swift  — sprava scenaru: ulozit/nacist/smazat/porovnat
 ```
+
+### Scenario comparison (ScenarioStore.swift + ScenarioManagerView.swift)
+- `MortgageScenario` — Codable snapshot vsech vstupu + klicovych vysledku (Hashable, Identifiable)
+- `ScenarioStore` — `@Observable` singleton, persistence pres UserDefaults/JSON
+  - **POZOR:** `didSet` nefunguje s `@Observable` — `save()` se vola explicitne v `add()`/`remove()`
+- UI: tlacitko "Sprava scenaru" v InputPanel otevre sheet
+  - Ulozit aktualni nastaveni s nazvem
+  - Nacist ulozeny scenar do kalkulacky
+  - Porovnat dva scenare vedle sebe (cena, urok, delka, splatka, najem, uroky celkem, cisty vysledek + rozdil)
+  - Smazat scenar
 
 ### 4 grafy
 1. **Slozeni splatky: jistina vs. uroky** — normalized stacked bars, modra/cervena
@@ -164,7 +172,8 @@ ContentView           — NavigationSplitView (levy + pravy panel)
 - Harmonogram neni cachovany — 30 let × 12 mesicu = 360 iteraci je dostatecne rychle
 - `CalculationEngine` je pure (zadny stav) — kazda funkce prijima vstupy a vraci vystupy
 - `MortgageInputs` struct slouzi jako snapshot pro predani do engine — oddeluje UI stav od vypoctu
-- `PBXFileSystemSynchronizedRootGroup` — nove soubory v adresari se automaticky zkompilují (netreba editovat pbxproj)
+- `PBXFileSystemSynchronizedRootGroup` — nove soubory v adresari (vcetne subadresaru) se automaticky zkompilují
+- `@Observable` + `didSet` je **nespolehlivy** — vzdy volat side-effecty explicitne v metodach
 - SwiftUI `Table` ma **limit 10 sloupcu** — proto jsou opravy + provoz slouceny do "Naklady"
 
 ## UI jazyk
@@ -178,7 +187,7 @@ ContentView           — NavigationSplitView (levy + pravy panel)
 1. Pridej property do `MortgageInputs` v `Models.swift`
 2. Pridej odpovídající `var` do `MortgageViewModel` + namapuj v `inputs` computed property
 3. Zapoj do vypoctu v `CalculationEngine.computeSchedule()` (pripadne do `autoExtraPayments()`)
-4. Pridej slider/toggle do prislusne `Section` v `InputPanel` (ContentView.swift)
+4. Pridej slider/toggle do prislusne `Section` v `InputPanel` (Views/InputPanel.swift)
 5. Pokud ovlivnuje snapshot, pridej `snapXxx` computed property do ViewModelu
 6. Pridej do PDF reportu (`PDFReportView`) — parametr + pripadny vysledek
 7. Pokud je to naklad, pridej do `CalculationEngine.computeTax()` pro rezim skutecnych nakladu
@@ -214,7 +223,16 @@ HypotecniKalkulacka/
 │   ├── Models.swift                    — TaxMode, ExtraPayment, YearData, MortgageInputs
 │   ├── CalculationEngine.swift         — pure vypocty bez SwiftUI
 │   ├── MortgageViewModel.swift         — @Observable ViewModel
-│   ├── ContentView.swift               — vsechny SwiftUI views (~1000 radku)
+│   ├── ScenarioStore.swift             — MortgageScenario + ScenarioStore (persistence)
+│   ├── ContentView.swift               — root view (21 radku)
+│   ├── Views/
+│   │   ├── InputPanel.swift            — levy panel se vstupy
+│   │   ├── DetailPanel.swift           — pravy panel
+│   │   ├── SnapshotHeader.swift        — kumulativni karty + SnapCard
+│   │   ├── ChartPanel.swift            — 4 grafy
+│   │   ├── YearTable.swift             — tabulka harmonogramu
+│   │   ├── PDFReportView.swift         — PDF export
+│   │   └── ScenarioManagerView.swift   — sprava scenaru
 │   └── Assets.xcassets/                — ikona aplikace + barvy
 ├── HypotecniKalkulackaTests/
 │   └── HypotecniKalkulackaTests.swift  — 45+ unit testu (ViewModel + Engine)
