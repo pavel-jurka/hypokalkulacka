@@ -19,12 +19,12 @@ jobs:
         run: |
           xcodebuild build \
             -scheme HypotecniKalkulacka \
-            -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M4)' \
+            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Test
         run: |
           xcodebuild test \
             -scheme HypotecniKalkulacka \
-            -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M4)' \
+            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
             CODE_SIGNING_ALLOWED=NO
