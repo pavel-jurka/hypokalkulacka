@@ -54,12 +54,12 @@ struct DetailPanel: View {
                         .foregroundStyle(.blue)
                     Text("PDF je připraveno")
                         .font(.title2).fontWeight(.semibold)
-                    Text("HypotecniKalkulacka.pdf")
+                    Text("MortgageCalculator.pdf")
                         .font(.subheadline).foregroundStyle(.secondary)
                     ShareLink(
                         item: url,
                         preview: SharePreview(
-                            "HypotecniKalkulacka.pdf",
+                            "MortgageCalculator.pdf",
                             icon: Image(systemName: "doc.richtext.fill"))
                     ) {
                         Label("Sdílet / Uložit do souborů", systemImage: "square.and.arrow.up")

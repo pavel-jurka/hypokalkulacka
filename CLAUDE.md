@@ -1,4 +1,4 @@
-# HypotecniKalkulacka — Projekt kontext
+# MortgageCalculator — Projekt kontext
 
 ## Co to je
 iPad aplikace (SwiftUI) pro simulaci investice do nemovitosti financované hypotekou. Ukazuje rok po roku kolik zaplatite na urocich, kolik vydelate na najmu a jaky je cisty vysledek. Zahrnuje kompletni business model vcetne provoznich nakladu, dane, zhodnoceni nemovitosti a srovnani s alternativni investici.
@@ -215,12 +215,12 @@ Views/
 
 ## Struktura souboru
 ```
-HypotecniKalkulacka/
+MortgageCalculator/
 ├── .github/workflows/
 │   └── build-and-test.yml              — CI: build + test na push/PR
-├── HypotecniKalkulacka.xcodeproj/      — PBXFileSystemSynchronizedRootGroup (auto-detect souboru)
-├── HypotecniKalkulacka/
-│   ├── HypotecniKalkulackaApp.swift    — entry point (@main)
+├── MortgageCalculator.xcodeproj/      — PBXFileSystemSynchronizedRootGroup (auto-detect souboru)
+├── MortgageCalculator/
+│   ├── MortgageCalculatorApp.swift    — entry point (@main)
 │   ├── FinancialTypes.swift            — CZK, Percent, Years, Months + czk() formatter
 │   ├── Models.swift                    — TaxMode, ExtraPayment, YearData, MortgageInputs
 │   ├── CalculationEngine.swift         — pure vypocty bez SwiftUI
@@ -236,9 +236,9 @@ HypotecniKalkulacka/
 │   │   ├── PDFReportView.swift         — PDF export
 │   │   └── ScenarioManagerView.swift   — sprava scenaru
 │   └── Assets.xcassets/                — ikona aplikace + barvy
-├── HypotecniKalkulackaTests/
-│   └── HypotecniKalkulackaTests.swift  — 45+ unit testu (XCTest, ViewModel + Engine)
-├── HypotecniKalkulackaUITests/
+├── MortgageCalculatorTests/
+│   └── MortgageCalculatorTests.swift  — 45+ unit testu (XCTest, ViewModel + Engine)
+├── MortgageCalculatorUITests/
 ├── README.md                           — anglicky popis projektu
 └── CLAUDE.md                           — tento soubor (projekt kontext pro Claude Code)
 ```

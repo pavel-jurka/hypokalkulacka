@@ -145,9 +145,9 @@ Framework: **XCTest** (universal Xcode compatibility).
 Run tests:
 ```bash
 xcodebuild test \
-  -scheme HypotecniKalkulacka \
+  -scheme MortgageCalculator \
   -destination 'platform=macOS' \
-  -only-testing:HypotecniKalkulackaTests
+  -only-testing:MortgageCalculatorTests
 ```
 
 ## CI/CD
@@ -169,11 +169,11 @@ GitHub Actions workflow (`.github/workflows/build-and-test.yml`) runs on every p
 ## Project Structure
 
 ```
-HypotecniKalkulacka/
+MortgageCalculator/
 ├── .github/workflows/
 │   └── build-and-test.yml              — CI: build + test on push/PR
-├── HypotecniKalkulacka/
-│   ├── HypotecniKalkulackaApp.swift    — entry point (@main)
+├── MortgageCalculator/
+│   ├── MortgageCalculatorApp.swift    — entry point (@main)
 │   ├── FinancialTypes.swift            — CZK, Percent, Years, Months + formatter
 │   ├── Models.swift                    — domain models (no SwiftUI dependency)
 │   ├── CalculationEngine.swift         — pure calculation functions
@@ -189,8 +189,8 @@ HypotecniKalkulacka/
 │   │   ├── PDFReportView.swift         — PDF generation
 │   │   └── ScenarioManagerView.swift   — save/load/compare scenarios
 │   └── Assets.xcassets/                — app icon + colors
-├── HypotecniKalkulackaTests/
-│   └── HypotecniKalkulackaTests.swift  — 45+ unit tests (ViewModel + Engine)
+├── MortgageCalculatorTests/
+│   └── MortgageCalculatorTests.swift  — 45+ unit tests (ViewModel + Engine)
 ├── README.md                           — this file
 └── CLAUDE.md                           — AI assistant project context
 ```

@@ -1,4 +1,4 @@
-/// FinancialTypes.swift — HypotecniKalkulacka
+/// FinancialTypes.swift — MortgageCalculator
 ///
 /// Sémantické typové aliasy pro finanční výpočty.
 /// Zajišťují čitelnost kódu bez narušení SwiftUI binding kompatibility.

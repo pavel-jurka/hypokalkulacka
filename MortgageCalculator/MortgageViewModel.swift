@@ -1,4 +1,4 @@
-/// MortgageViewModel.swift — HypotecniKalkulacka
+/// MortgageViewModel.swift — MortgageCalculator
 ///
 /// @Observable ViewModel — drží UI stav a deleguje výpočty na CalculationEngine.
 /// Propojuje domain logiku se SwiftUI views.
@@ -191,7 +191,7 @@ class MortgageViewModel {
 
         let imageSize = CGSize(width: cgImage.width, height: cgImage.height)
         let url = URL.temporaryDirectory
-            .appendingPathComponent("HypotecniKalkulacka_\(Int(Date().timeIntervalSince1970)).pdf")
+            .appendingPathComponent("MortgageCalculator_\(Int(Date().timeIntervalSince1970)).pdf")
 
         var mediaBox = CGRect(origin: .zero, size: imageSize)
         guard let pdf = CGContext(url as CFURL, mediaBox: &mediaBox, nil) else { return nil }

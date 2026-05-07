@@ -1,4 +1,4 @@
-/// ContentView.swift — HypotecniKalkulacka
+/// ContentView.swift — MortgageCalculator
 ///
 /// Root view — NavigationSplitView s levým a pravým panelem.
 /// Všechny sub-views jsou v Views/ adresáři.

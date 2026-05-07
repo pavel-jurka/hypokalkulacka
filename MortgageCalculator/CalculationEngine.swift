@@ -1,4 +1,4 @@
-/// CalculationEngine.swift — HypotecniKalkulacka
+/// CalculationEngine.swift — MortgageCalculator
 ///
 /// Čistý výpočetní engine bez závislosti na SwiftUI nebo Observation.
 /// Všechny funkce jsou pure — stejné vstupy vždy produkují stejné výstupy.

@@ -1,13 +1,13 @@
 //
-//  HypotecniKalkulackaUITestsLaunchTests.swift
-//  HypotecniKalkulackaUITests
+//  MortgageCalculatorUITestsLaunchTests.swift
+//  MortgageCalculatorUITests
 //
 //  Created by Pavel Jurka on 22.04.2026.
 //
 
 import XCTest
 
-final class HypotecniKalkulackaUITestsLaunchTests: XCTestCase {
+final class MortgageCalculatorUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

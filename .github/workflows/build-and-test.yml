@@ -20,7 +20,7 @@ jobs:
       - name: Build
         run: |
           xcodebuild build \
-            -scheme HypotecniKalkulacka \
+            -scheme MortgageCalculator \
             -destination 'platform=macOS' \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             IPHONEOS_DEPLOYMENT_TARGET=17.0 \
@@ -29,9 +29,9 @@ jobs:
       - name: Test
         run: |
           xcodebuild test \
-            -scheme HypotecniKalkulacka \
+            -scheme MortgageCalculator \
             -destination 'platform=macOS' \
-            -only-testing:HypotecniKalkulackaTests \
+            -only-testing:MortgageCalculatorTests \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             IPHONEOS_DEPLOYMENT_TARGET=17.0 \
             CODE_SIGNING_ALLOWED=NO

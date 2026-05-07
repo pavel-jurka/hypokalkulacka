@@ -1,4 +1,4 @@
-/// Models.swift — HypotecniKalkulacka
+/// Models.swift — MortgageCalculator
 ///
 /// Domain modely: datové struktury bez závislosti na SwiftUI.
 /// Použité v CalculationEngine i ve ViewModelu.

@@ -1,13 +1,13 @@
 //
-//  HypotecniKalkulackaUITests.swift
-//  HypotecniKalkulackaUITests
+//  MortgageCalculatorUITests.swift
+//  MortgageCalculatorUITests
 //
 //  Created by Pavel Jurka on 22.04.2026.
 //
 
 import XCTest
 
-final class HypotecniKalkulackaUITests: XCTestCase {
+final class MortgageCalculatorUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.

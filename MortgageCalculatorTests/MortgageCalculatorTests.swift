@@ -2,7 +2,7 @@
 /// XCTest framework — kompatibilní se všemi verzemi Xcode.
 
 import XCTest
-@testable import HypotecniKalkulacka
+@testable import MortgageCalculator
 
 // MARK: - Annuity Formula
 
