@@ -20,6 +20,8 @@ jobs:
           xcodebuild build \
             -scheme HypotecniKalkulacka \
             -destination 'platform=macOS' \
+            MACOSX_DEPLOYMENT_TARGET=15.0 \
+            IPHONEOS_DEPLOYMENT_TARGET=17.0 \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Test
@@ -27,4 +29,6 @@ jobs:
           xcodebuild test \
             -scheme HypotecniKalkulacka \
             -destination 'platform=macOS' \
+            MACOSX_DEPLOYMENT_TARGET=15.0 \
+            IPHONEOS_DEPLOYMENT_TARGET=17.0 \
             CODE_SIGNING_ALLOWED=NO
