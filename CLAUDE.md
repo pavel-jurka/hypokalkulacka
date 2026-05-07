@@ -34,7 +34,7 @@ Cely projekt je v jednom souboru: `HypotecniKalkulacka/ContentView.swift` (~1450
 |---|---|---|---|
 | Nemovitost | Cena nemovitosti | 9 900 000 Kc | 1 M – 30 M |
 | Nemovitost | Vlastni kapital | 10 % | 5 – 50 % |
-| Nemovitost | Rekonstrukce (toggle) | vyp | 0 – 2 000 000 Kc |
+| Nemovitost | Rekonstrukce (toggle) | vyp | 0 – 2 000 000 Kc, default 1 M |
 | Nemovitost | Zhodnoceni nemovitosti (toggle) | vyp | 0 – 10 %/rok, default 3 % |
 | Hypoteka | Delka | 30 let | 5 – 30 |
 | Hypoteka | Urokova sazba | 4,79 % | 0,5 – 10 % |
@@ -51,7 +51,7 @@ Cely projekt je v jednom souboru: `HypotecniKalkulacka/ContentView.swift` (~1450
 | Srovnani | Alternativni investice (toggle) | vyp | 0 – 15 %, default 7 % |
 | Srovnani | Inflacni diskont (toggle) | vyp | 0 – 8 %, default 2,5 % |
 | Mimoradne splatky | Uplatnit najem jako splatky (toggle) | vyp | auto-generuje splatky z najmu |
-| Mimoradne splatky | Manualni splatky | zadne | rok 1–delka, castka 10 k–3 M |
+| Mimoradne splatky | Manualni splatky | rok 1, 1 M Kc | rok 1–delka, castka 10 k–3 M |
 
 ### Rekonstrukce v hypotece
 - Toggle `includeReconstruction` + slider `reconstructionAmount` (0–2 M Kc)
@@ -109,7 +109,7 @@ Cely projekt je v jednom souboru: `HypotecniKalkulacka/ContentView.swift` (~1450
 ### Views (vse v ContentView.swift)
 ```
 ContentView           — NavigationSplitView (levy + pravy panel)
-├── InputPanel        — levy panel: Form se vsemi slidery a vstupy
+├── InputPanel        — levy panel: Nemovitost → Celkovy vysledek → Mimoradne splatky → Hypoteka → Najem → Provoz → Dan → Opravy → Srovnani
 │   └── SliderRow     — reusable slider komponenta
 ├── DetailPanel       — pravy panel: Chart/Tabulka toggle + PDF export
 │   ├── SnapshotHeader — slider roku + tri sady kumulativnich karet
@@ -123,8 +123,8 @@ ContentView           — NavigationSplitView (levy + pravy panel)
 ```
 
 ### 4 grafy
-1. **Kumulativni cisty vysledek** — line+area, cervena/zelena, indigo ruler pro snapshot rok
-2. **Slozeni splatky: jistina vs. uroky** — normalized stacked bars, modra/cervena
+1. **Slozeni splatky: jistina vs. uroky** — normalized stacked bars, modra/cervena
+2. **Kumulativni cisty vysledek** — line+area, cervena/zelena, indigo ruler pro snapshot rok
 3. **Zbyvajici dluh a kumulativni uroky** — dve serie (series: parametr), modra/cervena, s legendou
 4. **Cisty rocni vysledek** — bars, zelena/cervena, wrench ikona pro velkou udrzbu
 

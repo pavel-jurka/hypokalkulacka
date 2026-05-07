@@ -102,7 +102,7 @@ class MortgageViewModel {
     var propertyPrice: Double = 9_900_000
     var ownCapitalPct: Double = 10
     var includeReconstruction: Bool = false
-    var reconstructionAmount: Double = 500_000
+    var reconstructionAmount: Double = 1_000_000
     var includeAppreciation: Bool = false
     var propertyAppreciationPct: Double = 3.0
 
@@ -153,8 +153,8 @@ class MortgageViewModel {
 
     // MARK: Vstupy — Mimořádné splátky
     var extraPayments: [ExtraPayment] = []
-    var newExtraYear: Int = 5
-    var newExtraAmount: Double = 500_000
+    var newExtraYear: Int = 1
+    var newExtraAmount: Double = 1_000_000
     var useRentAsExtraPayments: Bool = false {
         didSet { recalculateAutoPayments() }
     }
@@ -527,6 +527,81 @@ struct InputPanel: View {
                 }
             } header: { Text("Nemovitost") }
 
+            // MARK: Celkový výsledek
+            Section {
+                if let y = vm.payoffYear {
+                    LabeledContent("Splaceno v roce") {
+                        Text("\(y)").foregroundStyle(.purple).fontWeight(.bold)
+                    }
+                }
+                if let y = vm.breakEvenYear {
+                    LabeledContent("Bod zvratu") {
+                        Text("rok \(y)").foregroundStyle(.blue).fontWeight(.semibold)
+                    }
+                } else {
+                    LabeledContent("Bod zvratu") {
+                        Text("nedosaženo").foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent("Čistý výsledek za \(Int(vm.mortgageYears)) let") {
+                    Text(czk(vm.finalBalance))
+                        .foregroundStyle(vm.finalBalance >= 0 ? .green : .red)
+                        .fontWeight(.bold)
+                }
+                if vm.includeAppreciation {
+                    LabeledContent("Hodnota nemovitosti") {
+                        Text(czk(vm.finalPropertyValue)).foregroundStyle(.blue).fontWeight(.bold)
+                    }
+                    LabeledContent("Celkový výsledek investice") {
+                        Text(czk(vm.finalTotalInvestment))
+                            .foregroundStyle(vm.finalTotalInvestment >= 0 ? .green : .red)
+                            .fontWeight(.bold)
+                    }
+                } else {
+                    LabeledContent("+ nemovitost v hodnotě") {
+                        Text(czk(vm.propertyPrice)).foregroundStyle(.blue)
+                    }
+                }
+            } header: { Text("Celkový výsledek") }
+
+            // MARK: Mimořádné splátky
+            Section {
+                Toggle("Uplatnit nájem jako splátky", isOn: $vm.useRentAsExtraPayments)
+                    .tint(.purple)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Rok:").foregroundStyle(.secondary)
+                        Stepper("\(vm.newExtraYear)", value: $vm.newExtraYear,
+                                in: 1...max(1, Int(vm.mortgageYears)))
+                    }
+                    SliderRow("Částka", $vm.newExtraAmount,
+                              10_000...3_000_000, 10_000, czk(vm.newExtraAmount))
+                    Button { vm.addExtraPayment() } label: {
+                        Label("Přidat mimořádnou splátku", systemImage: "plus.circle.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent).tint(.purple)
+                }
+
+                ForEach($vm.extraPayments) { $ep in
+                    HStack(spacing: 10) {
+                        Toggle("", isOn: $ep.isEnabled).labelsHidden().tint(.purple)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Rok \(ep.year)").fontWeight(.semibold)
+                                .foregroundStyle(ep.isEnabled ? .primary : .secondary)
+                            Text(czk(ep.amount)).font(.caption)
+                                .foregroundStyle(ep.isEnabled ? .purple : .secondary)
+                        }
+                        Spacer()
+                        Button { vm.removeExtraPayment(id: ep.id) } label: {
+                            Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            } header: { Text("Mimořádné splátky jistiny") }
+
             // MARK: Hypotéka + Refixace
             Section {
                 SliderRow("Délka hypotéky", $vm.mortgageYears,
@@ -616,43 +691,6 @@ struct InputPanel: View {
                           50_000...1_000_000, 10_000, czk(vm.largeRepairAmount))
             } header: { Text("Opravy & Údržba") }
 
-            // MARK: Mimořádné splátky
-            Section {
-                Toggle("Uplatnit nájem jako splátky", isOn: $vm.useRentAsExtraPayments)
-                    .tint(.purple)
-
-                ForEach($vm.extraPayments) { $ep in
-                    HStack(spacing: 10) {
-                        Toggle("", isOn: $ep.isEnabled).labelsHidden().tint(.purple)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Rok \(ep.year)").fontWeight(.semibold)
-                                .foregroundStyle(ep.isEnabled ? .primary : .secondary)
-                            Text(czk(ep.amount)).font(.caption)
-                                .foregroundStyle(ep.isEnabled ? .purple : .secondary)
-                        }
-                        Spacer()
-                        Button { vm.removeExtraPayment(id: ep.id) } label: {
-                            Image(systemName: "minus.circle.fill").foregroundStyle(.red)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Rok:").foregroundStyle(.secondary)
-                        Stepper("\(vm.newExtraYear)", value: $vm.newExtraYear,
-                                in: 1...max(1, Int(vm.mortgageYears)))
-                    }
-                    SliderRow("Částka", $vm.newExtraAmount,
-                              10_000...3_000_000, 10_000, czk(vm.newExtraAmount))
-                    Button { vm.addExtraPayment() } label: {
-                        Label("Přidat mimořádnou splátku", systemImage: "plus.circle.fill")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent).tint(.purple)
-                }
-            } header: { Text("Mimořádné splátky jistiny") }
-
             // MARK: Alternativní investice
             Section {
                 Toggle("Porovnat s alternativní investicí", isOn: $vm.includeOpportunityCost)
@@ -674,42 +712,6 @@ struct InputPanel: View {
                 }
             } header: { Text("Srovnání & Inflace") }
 
-            // MARK: Celkový výsledek
-            Section {
-                if let y = vm.payoffYear {
-                    LabeledContent("Splaceno v roce") {
-                        Text("\(y)").foregroundStyle(.purple).fontWeight(.bold)
-                    }
-                }
-                if let y = vm.breakEvenYear {
-                    LabeledContent("Bod zvratu") {
-                        Text("rok \(y)").foregroundStyle(.blue).fontWeight(.semibold)
-                    }
-                } else {
-                    LabeledContent("Bod zvratu") {
-                        Text("nedosaženo").foregroundStyle(.secondary)
-                    }
-                }
-                LabeledContent("Čistý výsledek za \(Int(vm.mortgageYears)) let") {
-                    Text(czk(vm.finalBalance))
-                        .foregroundStyle(vm.finalBalance >= 0 ? .green : .red)
-                        .fontWeight(.bold)
-                }
-                if vm.includeAppreciation {
-                    LabeledContent("Hodnota nemovitosti") {
-                        Text(czk(vm.finalPropertyValue)).foregroundStyle(.blue).fontWeight(.bold)
-                    }
-                    LabeledContent("Celkový výsledek investice") {
-                        Text(czk(vm.finalTotalInvestment))
-                            .foregroundStyle(vm.finalTotalInvestment >= 0 ? .green : .red)
-                            .fontWeight(.bold)
-                    }
-                } else {
-                    LabeledContent("+ nemovitost v hodnotě") {
-                        Text(czk(vm.propertyPrice)).foregroundStyle(.blue)
-                    }
-                }
-            } header: { Text("Celkový výsledek") }
         }
         .formStyle(.grouped)
     }
@@ -919,36 +921,7 @@ struct ChartPanel: View {
         ScrollView {
             VStack(spacing: 24) {
 
-                // Graf 1 — Kumulativní čistý výsledek
-                GroupBox {
-                    Chart(vm.schedule) { d in
-                        AreaMark(x: .value("Rok", d.year), y: .value("Kč", d.cumulativeNet))
-                            .foregroundStyle(.linearGradient(
-                                colors: [.green.opacity(0.3), .clear],
-                                startPoint: .top, endPoint: .bottom))
-                        LineMark(x: .value("Rok", d.year), y: .value("Kč", d.cumulativeNet))
-                            .foregroundStyle(d.cumulativeNet >= 0 ? Color.green : Color.red)
-                            .lineStyle(StrokeStyle(lineWidth: 2.5))
-                        RuleMark(x: .value("Rok", vm.snapYear))
-                            .foregroundStyle(Color.indigo.opacity(0.5))
-                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                    }
-                    .chartXAxis { AxisMarks(values: .stride(by: 5)) { v in
-                        AxisGridLine()
-                        AxisValueLabel { if let y = v.as(Int.self) { Text("rok \(y)") } }
-                    }}
-                    .chartYAxis { AxisMarks { v in
-                        AxisGridLine()
-                        AxisValueLabel { if let val = v.as(Double.self) {
-                            Text(czk(val, compact: true)).font(.caption) }}
-                    }}
-                    .frame(height: 260).padding(.top, 4)
-                } label: {
-                    Label("Kumulativní čistý výsledek", systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.headline)
-                }
-
-                // Graf 2 — Složení splátky (amortizace)
+                // Graf 1 — Složení splátky (amortizace)
                 GroupBox {
                     Chart(vm.schedule) { d in
                         BarMark(x: .value("Rok", d.year), y: .value("Kč", d.principalPaid),
@@ -989,6 +962,35 @@ struct ChartPanel: View {
                     .font(.caption).padding(.top, 4)
                 } label: {
                     Label("Složení splátky: jistina vs. úroky", systemImage: "chart.bar.xaxis")
+                        .font(.headline)
+                }
+
+                // Graf 2 — Kumulativní čistý výsledek
+                GroupBox {
+                    Chart(vm.schedule) { d in
+                        AreaMark(x: .value("Rok", d.year), y: .value("Kč", d.cumulativeNet))
+                            .foregroundStyle(.linearGradient(
+                                colors: [.green.opacity(0.3), .clear],
+                                startPoint: .top, endPoint: .bottom))
+                        LineMark(x: .value("Rok", d.year), y: .value("Kč", d.cumulativeNet))
+                            .foregroundStyle(d.cumulativeNet >= 0 ? Color.green : Color.red)
+                            .lineStyle(StrokeStyle(lineWidth: 2.5))
+                        RuleMark(x: .value("Rok", vm.snapYear))
+                            .foregroundStyle(Color.indigo.opacity(0.5))
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    }
+                    .chartXAxis { AxisMarks(values: .stride(by: 5)) { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let y = v.as(Int.self) { Text("rok \(y)") } }
+                    }}
+                    .chartYAxis { AxisMarks { v in
+                        AxisGridLine()
+                        AxisValueLabel { if let val = v.as(Double.self) {
+                            Text(czk(val, compact: true)).font(.caption) }}
+                    }}
+                    .frame(height: 260).padding(.top, 4)
+                } label: {
+                    Label("Kumulativní čistý výsledek", systemImage: "chart.line.uptrend.xyaxis")
                         .font(.headline)
                 }
 
