@@ -1,9 +1,12 @@
 /// Unit testy pro výpočetní logiku hypoteční kalkulačky.
 /// Pokrývají anuitní splátku, amortizaci, daň, edge cases i finanční přesnost.
 
-import Foundation
 import Testing
 @testable import HypotecniKalkulacka
+
+private func testPow(_ base: Double, _ exp: Double) -> Double {
+    Darwin.pow(base, exp)
+}
 
 // MARK: - Annuity Formula
 
@@ -202,7 +205,7 @@ struct RentalIncomeTests {
         let year5 = schedule[4].rentalIncome
 
         #expect(abs(year1 - 240_000) < 1)
-        let expected5 = 240_000 * pow(1.03, 4)
+        let expected5 = 240_000 * testPow(1.03, 4)
         #expect(abs(year5 - expected5) < 1)
     }
 
@@ -458,7 +461,7 @@ struct AppreciationTests {
         vm.mortgageYears = 10
 
         let year10 = vm.schedule[9]
-        let expected = 10_000_000 * pow(1.03, 10)
+        let expected = 10_000_000 * testPow(1.03, 10)
         #expect(abs(year10.propertyValue - expected) < 1)
     }
 
