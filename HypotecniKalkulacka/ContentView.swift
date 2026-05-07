@@ -527,6 +527,35 @@ struct InputPanel: View {
                 }
             } header: { Text("Nemovitost") }
 
+            // MARK: Hypotéka + Refixace
+            Section {
+                SliderRow("Délka hypotéky", $vm.mortgageYears,
+                          5...30, 1, "\(Int(vm.mortgageYears)) let")
+                SliderRow("Úroková sazba", $vm.interestRate,
+                          0.5...10, 0.05,
+                          String(format: "%.2f %%", vm.interestRate))
+                LabeledContent("Měsíční splátka") {
+                    Text(czk(vm.monthlyPayment))
+                        .foregroundStyle(.blue).fontWeight(.semibold)
+                }
+
+                Toggle("Změna sazby po refixaci", isOn: $vm.useRefixation)
+                    .tint(.blue)
+
+                if vm.useRefixation {
+                    SliderRow("Konec fixace", $vm.refixYear,
+                              1...(vm.mortgageYears - 1), 1,
+                              "po \(Int(vm.refixYear)) letech")
+                    SliderRow("Nová sazba po refixaci", $vm.refixRate,
+                              0.5...12, 0.05,
+                              String(format: "%.2f %%", vm.refixRate))
+                    LabeledContent("Splátka po refixaci") {
+                        Text(czk(vm.monthlyPaymentAfterRefix))
+                            .foregroundStyle(.indigo).fontWeight(.semibold)
+                    }
+                }
+            } header: { Text("Hypotéka") }
+
             // MARK: Celkový výsledek
             Section {
                 if let y = vm.payoffYear {
@@ -601,35 +630,6 @@ struct InputPanel: View {
                     }
                 }
             } header: { Text("Mimořádné splátky jistiny") }
-
-            // MARK: Hypotéka + Refixace
-            Section {
-                SliderRow("Délka hypotéky", $vm.mortgageYears,
-                          5...30, 1, "\(Int(vm.mortgageYears)) let")
-                SliderRow("Úroková sazba", $vm.interestRate,
-                          0.5...10, 0.05,
-                          String(format: "%.2f %%", vm.interestRate))
-                LabeledContent("Měsíční splátka") {
-                    Text(czk(vm.monthlyPayment))
-                        .foregroundStyle(.blue).fontWeight(.semibold)
-                }
-
-                Toggle("Změna sazby po refixaci", isOn: $vm.useRefixation)
-                    .tint(.blue)
-
-                if vm.useRefixation {
-                    SliderRow("Konec fixace", $vm.refixYear,
-                              1...(vm.mortgageYears - 1), 1,
-                              "po \(Int(vm.refixYear)) letech")
-                    SliderRow("Nová sazba po refixaci", $vm.refixRate,
-                              0.5...12, 0.05,
-                              String(format: "%.2f %%", vm.refixRate))
-                    LabeledContent("Splátka po refixaci") {
-                        Text(czk(vm.monthlyPaymentAfterRefix))
-                            .foregroundStyle(.indigo).fontWeight(.semibold)
-                    }
-                }
-            } header: { Text("Hypotéka") }
 
             // MARK: Příjmy z nájmu
             Section {

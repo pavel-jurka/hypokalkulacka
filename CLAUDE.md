@@ -109,7 +109,7 @@ Cely projekt je v jednom souboru: `HypotecniKalkulacka/ContentView.swift` (~1450
 ### Views (vse v ContentView.swift)
 ```
 ContentView           — NavigationSplitView (levy + pravy panel)
-├── InputPanel        — levy panel: Nemovitost → Celkovy vysledek → Mimoradne splatky → Hypoteka → Najem → Provoz → Dan → Opravy → Srovnani
+├── InputPanel        — levy panel: Nemovitost → Hypoteka → Celkovy vysledek → Mimoradne splatky → Najem → Provoz → Dan → Opravy → Srovnani
 │   └── SliderRow     — reusable slider komponenta
 ├── DetailPanel       — pravy panel: Chart/Tabulka toggle + PDF export
 │   ├── SnapshotHeader — slider roku + tri sady kumulativnich karet
