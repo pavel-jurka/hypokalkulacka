@@ -36,14 +36,20 @@ CalculationEngine.swift (~220 lines)
 MortgageViewModel.swift (~205 lines)
 └── @Observable ViewModel — UI state + delegation to CalculationEngine
 
-ContentView.swift (~1,000 lines)
-├── ContentView      — NavigationSplitView root
-├── InputPanel       — left panel: all inputs as sliders/toggles
-├── DetailPanel      — right panel: charts/table + PDF export
-├── SnapshotHeader   — year slider + cumulative overview cards
-├── ChartPanel       — 4 interactive charts (Swift Charts)
-├── YearTable        — full amortization schedule table
-└── PDFReportView    — rendered to PDF via ImageRenderer
+ScenarioStore.swift (~170 lines)
+├── MortgageScenario — Codable snapshot of all inputs + key results
+└── ScenarioStore    — @Observable persistence via UserDefaults/JSON
+
+ContentView.swift (21 lines) — root NavigationSplitView
+
+Views/ (7 files, ~1,100 lines total)
+├── InputPanel.swift           — left panel: scenarios, all inputs
+├── DetailPanel.swift          — right panel: charts/table + PDF
+├── SnapshotHeader.swift       — year slider + cumulative cards
+├── ChartPanel.swift           — 4 interactive charts (Swift Charts)
+├── YearTable.swift            — amortization schedule table
+├── PDFReportView.swift        — rendered to PDF via ImageRenderer
+└── ScenarioManagerView.swift  — save/load/compare scenarios
 ```
 
 **Key design decisions:**
@@ -69,7 +75,7 @@ The calculator models a complete property investment scenario:
 
 | Category | Parameters |
 |---|---|
-| **Property** | Purchase price (1M–30M CZK), own capital (5–50%), optional reconstruction (0–2M) |
+| **Property** | Purchase price (1M–30M CZK), own capital (5–50%), optional reconstruction (0–2M), appreciation/depreciation (−5% to +10%) |
 | **Mortgage** | Duration (5–30 years), interest rate (0.5–10%), optional rate refixation |
 | **Rental income** | Monthly rent (10k–80k), annual growth (0–8%), vacancy (0–4 months/year) |
 | **Operating costs** | Insurance, SVJ/maintenance fund, optional property management fee (% of rent) |
@@ -109,6 +115,7 @@ cumulative_net + property_value − remaining_debt
 - **PDF export:** full report with parameters, result cards, charts (2×2 grid), year-by-year table
 - **Toggle-based:** every feature is optional — compare scenarios by flipping switches
 - **Auto extra payments:** enable "rent as payments" and the app computes how many years of rental income pay off the mortgage early. Amounts grow with rent, react to all parameter changes.
+- **Scenario management:** save named scenarios, load them back, compare two scenarios side by side (all key metrics + difference). Persisted via UserDefaults.
 
 ### UI
 
@@ -147,7 +154,6 @@ GitHub Actions workflow runs on every push and PR to `main`:
 
 ## What the App Does Not Model
 
-- Property value depreciation scenarios (only appreciation)
 - Mortgage insurance (pojištění schopnosti splácet)
 - Property management beyond simple fee percentage
 - Vacancy patterns (only average months/year)
@@ -167,7 +173,16 @@ HypotecniKalkulacka/
 │   ├── Models.swift                    — domain models (no SwiftUI dependency)
 │   ├── CalculationEngine.swift         — pure calculation functions
 │   ├── MortgageViewModel.swift         — @Observable ViewModel
-│   ├── ContentView.swift               — all SwiftUI views (~1,000 lines)
+│   ├── ScenarioStore.swift             — scenario persistence (UserDefaults)
+│   ├── ContentView.swift               — root view (21 lines)
+│   ├── Views/
+│   │   ├── InputPanel.swift            — left panel with all inputs
+│   │   ├── DetailPanel.swift           — right panel container
+│   │   ├── SnapshotHeader.swift        — cumulative overview cards
+│   │   ├── ChartPanel.swift            — 4 interactive charts
+│   │   ├── YearTable.swift             — amortization table
+│   │   ├── PDFReportView.swift         — PDF generation
+│   │   └── ScenarioManagerView.swift   — save/load/compare scenarios
 │   └── Assets.xcassets/                — app icon + colors
 ├── HypotecniKalkulackaTests/
 │   └── HypotecniKalkulackaTests.swift  — 45+ unit tests (ViewModel + Engine)
