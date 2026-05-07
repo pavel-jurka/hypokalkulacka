@@ -1,148 +1,133 @@
 # Mortgage Calculator (Hypoteční kalkulačka)
 
-A comprehensive iPad app for simulating property investment financed by a mortgage. Model the full lifecycle year by year — see exactly how much you pay in interest, how rental income offsets costs, and what your total investment result looks like after 5, 10, or 30 years.
-
-Built for real-world decision making, not just a demo calculator.
+An iPad investment simulator for property financed by a mortgage. Not a simple payment calculator — a complete financial model that answers: *"Is this property worth buying as a rental investment?"*
 
 [![Build & Test](https://github.com/pavel-jurka/hypokalkulacka/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/pavel-jurka/hypokalkulacka/actions)
 
-## Requirements
+Unlike standard mortgage calculators, this app models:
+- **Rental cash flow** with vacancy, growth, and operating costs
+- **Equity accumulation** — principal repayment builds net worth, not just cost
+- **Czech rental taxation** — flat-rate 30% expense or actual costs (§ 9 ZDP)
+- **Extra payments** — manual or automatic from rental income
+- **Property appreciation/depreciation** (−5% to +10%/year)
+- **Inflation-adjusted returns** and alternative investment comparison
+- **Scenario comparison** — save, load, and compare A vs B side by side
 
-- iPadOS 17 or later
-- Xcode 15+ / Swift 5.9+
-- No external dependencies — pure Apple frameworks
+## Screenshots
 
-## Architecture
+> *TODO: Add 3–4 screenshots (input panel, charts, snapshot cards, scenario comparison)*
 
-Separated into domain, engine, viewmodel, and views:
+## Quick Start
 
-```
-FinancialTypes.swift (~40 lines)
-└── CZK, Percent, Years, Months typealiases + czk() formatter
-
-Models.swift (~150 lines)
-├── TaxMode             — enum: flat-rate vs. actual costs (Codable)
-├── ExtraPayment        — one-off principal payment (manual or auto-generated)
-├── YearData            — computed results for one year (immutable struct)
-└── MortgageInputs      — snapshot of all parameters for CalculationEngine
-
-CalculationEngine.swift (~220 lines)
-├── monthlyPayment()           — annuity formula
-├── monthlyPaymentAfterRefix() — post-refixation payment
-├── computeTax()               — Czech tax law § 9 ZDP
-├── autoExtraPayments()        — rent-as-payments simulation
-└── computeSchedule()          — full year-by-year amortization
-
-MortgageViewModel.swift (~205 lines)
-└── @Observable ViewModel — UI state + delegation to CalculationEngine
-
-ScenarioStore.swift (~170 lines)
-├── MortgageScenario — Codable snapshot of all inputs + key results
-└── ScenarioStore    — @Observable persistence via UserDefaults/JSON
-
-ContentView.swift (21 lines) — root NavigationSplitView
-
-Views/ (7 files, ~1,100 lines total)
-├── InputPanel.swift           — left panel: scenarios, all inputs
-├── DetailPanel.swift          — right panel: charts/table + PDF
-├── SnapshotHeader.swift       — year slider + cumulative cards
-├── ChartPanel.swift           — 4 interactive charts (Swift Charts)
-├── YearTable.swift            — amortization schedule table
-├── PDFReportView.swift        — rendered to PDF via ImageRenderer
-└── ScenarioManagerView.swift  — save/load/compare scenarios
+```bash
+git clone https://github.com/pavel-jurka/hypokalkulacka.git
+cd hypokalkulacka
+open MortgageCalculator.xcodeproj
 ```
 
-**Key design decisions:**
-
-| Decision | Why |
-|---|---|
-| `@Observable` (not `ObservableObject`) | Eliminates `@Published` boilerplate, cleaner reactivity. Requires iOS 17. |
-| Separated domain layer | `CalculationEngine` is pure (no SwiftUI), fully testable independently. `MortgageInputs` struct decouples UI state from computation. |
-| Financial typealiases | `CZK`, `Percent`, `Years`, `Months` — semantic clarity without breaking SwiftUI bindings. |
-| Computed `schedule` | Recalculates on every input change. 30 years × 12 months = 360 iterations — instant. |
-| Computed `autoExtraPayments` | Reactive to all input changes (rent, vacancy, rate...). No stale state. |
-| `series:` on `LineMark` | Required to keep multiple chart series separate. Without it, Charts connects all points into one jagged line. |
-| `chartForegroundStyleScale` | Only way to generate a legend in Swift Charts. |
-| PDF via `ImageRenderer → cgImage → CGContext` | Reliable cross-platform approach. No UIKit dependency. |
-| SwiftUI `Table` 10-column limit | Repairs + operating costs merged into single "Náklady" column. |
-| `PBXFileSystemSynchronizedRootGroup` | New files in the directory are auto-compiled — no need to edit pbxproj. |
+Requirements: iPadOS 17+ / macOS 14+, Xcode 15+, no external dependencies.
 
 ## Features
 
 ### Financial Model
 
-The calculator models a complete property investment scenario:
-
 | Category | Parameters |
 |---|---|
-| **Property** | Purchase price (1M–30M CZK), own capital (5–50%), optional reconstruction (0–2M), appreciation/depreciation (−5% to +10%) |
-| **Mortgage** | Duration (5–30 years), interest rate (0.5–10%), optional rate refixation |
+| **Property** | Price (1M–30M CZK), own capital (5–50%), reconstruction (0–2M), appreciation (−5% to +10%) |
+| **Mortgage** | Duration (5–30y), interest rate (0.5–10%), refixation after N years |
 | **Rental income** | Monthly rent (10k–80k), annual growth (0–8%), vacancy (0–4 months/year) |
-| **Operating costs** | Insurance, SVJ/maintenance fund, optional property management fee (% of rent) |
-| **Repairs** | Annual maintenance + periodic major repairs |
-| **Tax** | Czech income tax on rental income — flat-rate 30% expense or actual costs (§ 9 ZDP) |
-| **Extra payments** | Manual one-off payments + automatic rent-as-payments (computed, reactive) |
-| **Investment view** | Property appreciation, alternative investment comparison, inflation discount |
+| **Operating costs** | Insurance, SVJ/maintenance fund, property management fee (% of rent) |
+| **Repairs** | Annual maintenance + periodic major repairs every N years |
+| **Tax** | Czech income tax — flat-rate 30% or actual costs with full deductions (§ 9 ZDP) |
+| **Extra payments** | Manual one-off + automatic rent-as-payments (reactive, grows with rent) |
+| **Investment view** | Appreciation, alternative return comparison, inflation discount |
+| **Scenarios** | Save named scenarios, load, compare side by side |
+
+### Interactive UI
+
+- **4 charts** — amortization breakdown, cumulative net result, debt vs. interest, annual result
+- **Snapshot slider** — drag to any year, see 3 rows of cumulative cards
+- **PDF export** — parameters, result cards, charts, full year-by-year table
+- **Toggle-based** — every feature is optional, flip switches to compare scenarios instantly
 
 ### Calculation Model
 
-**Annuity formula:**
-```
-M = P × r × (1+r)^n / ((1+r)^n − 1)
-```
-where `P` = mortgage amount, `r` = monthly rate, `n` = total months.
+Annuity: `M = P × r × (1+r)^n / ((1+r)^n − 1)`
 
-**Cumulative net result:**
-```
-Start = −own_capital
-Each year += rent − interest − repairs − operating_costs − tax − extra_payment
-```
+Net result: `−own_capital + Σ(rent − interest − repairs − operating − tax − extra)`
+
 Principal repayment is NOT subtracted — it converts cash into property equity.
 
-**Tax (Czech law § 9 ZDP):**
-- Flat-rate: taxable base = 70% of rental income
-- Actual costs: taxable base = max(0, rent − interest − repairs − management − insurance − SVJ)
+Total investment: `cumulative_net + property_value − remaining_debt`
 
-**Total investment result:**
+### Performance
+
+~360 monthly iterations per recalculation. Instant on any modern device — no caching needed.
+
+## Architecture
+
+```mermaid
+graph TD
+    Views[Views — SwiftUI] --> ViewModel[@Observable ViewModel]
+    ViewModel --> Engine[CalculationEngine — pure functions]
+    Engine --> Models[Models — domain types]
+    ViewModel --> Store[ScenarioStore — persistence]
+    Store --> Models
 ```
-cumulative_net + property_value − remaining_debt
+
+The calculation engine has **zero SwiftUI dependency** — pure static functions that accept `MortgageInputs` and return `[YearData]`. Fully testable independently.
+
+Financial types (`CZK`, `Percent`, `Years`, `Months`) are typealiases — semantic clarity without breaking SwiftUI bindings.
+
+<details>
+<summary>Detailed file structure</summary>
+
+```
+MortgageCalculator/
+├── .github/workflows/
+│   └── build-and-test.yml              — CI: build + test on push/PR
+├── MortgageCalculator/
+│   ├── MortgageCalculatorApp.swift     — entry point (@main)
+│   ├── FinancialTypes.swift            — CZK, Percent, Years, Months + formatter
+│   ├── Models.swift                    — TaxMode, ExtraPayment, YearData, MortgageInputs
+│   ├── CalculationEngine.swift         — pure calculation functions (~220 lines)
+│   ├── MortgageViewModel.swift         — @Observable ViewModel (~205 lines)
+│   ├── ScenarioStore.swift             — save/load scenarios (UserDefaults)
+│   ├── ContentView.swift               — root view (21 lines)
+│   └── Views/
+│       ├── InputPanel.swift            — left panel with all inputs
+│       ├── DetailPanel.swift           — right panel container
+│       ├── SnapshotHeader.swift        — cumulative overview cards
+│       ├── ChartPanel.swift            — 4 interactive charts
+│       ├── YearTable.swift             — amortization table
+│       ├── PDFReportView.swift         — PDF generation
+│       └── ScenarioManagerView.swift   — save/load/compare scenarios
+├── MortgageCalculatorTests/            — 45+ unit tests (XCTest)
+├── README.md
+└── CLAUDE.md                           — AI assistant context
 ```
 
-### Interactive Features
+</details>
 
-- **4 charts:** amortization breakdown, cumulative net result, debt vs. cumulative interest, annual net result
-- **Snapshot slider:** drag to any year, see cumulative values across 3 rows of cards (investor view, investment view, cash flow)
-- **PDF export:** full report with parameters, result cards, charts (2×2 grid), year-by-year table
-- **Toggle-based:** every feature is optional — compare scenarios by flipping switches
-- **Auto extra payments:** enable "rent as payments" and the app computes how many years of rental income pay off the mortgage early. Amounts grow with rent, react to all parameter changes.
-- **Scenario management:** save named scenarios, load them back, compare two scenarios side by side (all key metrics + difference). Persisted via UserDefaults.
+<details>
+<summary>Key design decisions</summary>
 
-### UI
+| Decision | Why |
+|---|---|
+| `@Observable` (not `ObservableObject`) | Eliminates `@Published` boilerplate, cleaner reactivity |
+| Separated domain layer | Engine is pure, testable independently. `MortgageInputs` decouples UI from computation |
+| Financial typealiases | Semantic clarity without wrapper complexity |
+| Computed `schedule` | Reactive to every input change. 360 iterations = instant |
+| XCTest (not Swift Testing) | Universal Xcode compatibility for CI |
+| PDF via `ImageRenderer` → `cgImage` → `CGContext` | No UIKit dependency |
+| `@Observable` + explicit `save()` | `didSet` is unreliable with `@Observable` macro |
 
-- All text in **Czech** (labels, sections, charts, table, PDF)
-- Currency: CZK with thin-space grouping, compact format in charts (1.2 M / 350 k)
-- iPad-optimized: `NavigationSplitView` with left input panel + right detail panel
+</details>
 
 ## Testing
 
-Comprehensive unit tests covering:
+45+ unit tests covering annuity formula, amortization invariants, tax computation (both modes), refixation, extra payments (reactivity, capping, rent growth), operating costs, property appreciation, snapshot values, edge cases, financial precision with known reference values, and direct CalculationEngine tests.
 
-- **Annuity formula** — standard, zero-rate, short term, known reference values
-- **Amortization invariants** — balance reaches zero, principal + interest = payment, monotonicity
-- **Rental income** — geometric growth, vacancy reduction
-- **Tax computation** — both modes, all deductible costs, disabled state
-- **Refixation** — payment changes, year marking
-- **Extra payments** — balance reduction, capping, auto-reactivity, rent growth
-- **Operating costs** — impact on net result, management fee calculation
-- **Property appreciation** — value growth, total investment result
-- **Snapshot** — year selection, opportunity cost, inflation discount
-- **Edge cases** — min/max values, all features enabled simultaneously
-- **Financial precision** — known reference values, payment composition over time
-- **CalculationEngine direct** — pure engine functions tested independently of ViewModel
-
-Framework: **XCTest** (universal Xcode compatibility).
-
-Run tests:
 ```bash
 xcodebuild test \
   -scheme MortgageCalculator \
@@ -152,48 +137,25 @@ xcodebuild test \
 
 ## CI/CD
 
-GitHub Actions workflow (`.github/workflows/build-and-test.yml`) runs on every push and PR to `main`:
-- **Build** — compile on macOS destination
-- **Test** — run unit tests (XCTest, macOS target)
-- Runner: `macos-15`, Xcode 16, Node.js 24
+GitHub Actions on every push/PR to `main`: build + unit tests on macOS 15, Xcode 16, Node.js 24.
+
+## Roadmap
+
+- [ ] Screenshots in README
+- [ ] iCloud scenario sync
+- [ ] Monte Carlo stress testing (rate hikes, rent drops, vacancy spikes)
+- [ ] Monthly cash flow granularity
+- [ ] Portfolio mode (multiple properties)
+- [ ] Refinancing comparison
+- [ ] Localization (EN)
+- [ ] macOS native layout
 
 ## What the App Does Not Model
 
 - Mortgage insurance (pojištění schopnosti splácet)
-- Property management beyond simple fee percentage
-- Vacancy patterns (only average months/year)
-- Depreciation allowance as a tax deduction
-- Multiple properties / portfolio view
+- Vacancy patterns beyond average months/year
+- Depreciation allowance as tax deduction
 - Currency other than CZK
-
-## Project Structure
-
-```
-MortgageCalculator/
-├── .github/workflows/
-│   └── build-and-test.yml              — CI: build + test on push/PR
-├── MortgageCalculator/
-│   ├── MortgageCalculatorApp.swift    — entry point (@main)
-│   ├── FinancialTypes.swift            — CZK, Percent, Years, Months + formatter
-│   ├── Models.swift                    — domain models (no SwiftUI dependency)
-│   ├── CalculationEngine.swift         — pure calculation functions
-│   ├── MortgageViewModel.swift         — @Observable ViewModel
-│   ├── ScenarioStore.swift             — scenario persistence (UserDefaults)
-│   ├── ContentView.swift               — root view (21 lines)
-│   ├── Views/
-│   │   ├── InputPanel.swift            — left panel with all inputs
-│   │   ├── DetailPanel.swift           — right panel container
-│   │   ├── SnapshotHeader.swift        — cumulative overview cards
-│   │   ├── ChartPanel.swift            — 4 interactive charts
-│   │   ├── YearTable.swift             — amortization table
-│   │   ├── PDFReportView.swift         — PDF generation
-│   │   └── ScenarioManagerView.swift   — save/load/compare scenarios
-│   └── Assets.xcassets/                — app icon + colors
-├── MortgageCalculatorTests/
-│   └── MortgageCalculatorTests.swift  — 45+ unit tests (ViewModel + Engine)
-├── README.md                           — this file
-└── CLAUDE.md                           — AI assistant project context
-```
 
 ## License
 
