@@ -68,10 +68,10 @@ Total investment: `cumulative_net + property_value − remaining_debt`
 
 ```mermaid
 graph TD
-    Views[Views — SwiftUI] --> ViewModel[@Observable ViewModel]
-    ViewModel --> Engine[CalculationEngine — pure functions]
-    Engine --> Models[Models — domain types]
-    ViewModel --> Store[ScenarioStore — persistence]
+    Views["Views (SwiftUI)"] --> ViewModel["ViewModel (Observable)"]
+    ViewModel --> Engine["CalculationEngine (pure)"]
+    Engine --> Models["Models (domain types)"]
+    ViewModel --> Store["ScenarioStore (persistence)"]
     Store --> Models
 ```
 
