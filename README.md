@@ -1,222 +1,160 @@
-# Mortgage Calculator
+# Mortgage Calculator (Hypoteční kalkulačka)
 
-An iPad app for simulating a property investment financed by a mortgage. Model the entire loan year by year — see exactly how much you pay in interest, how much rental income you earn, and what your net result is at any point in time.
+A comprehensive iPad app for simulating property investment financed by a mortgage. Model the full lifecycle year by year — see exactly how much you pay in interest, how rental income offsets costs, and what your total investment result looks like after 5, 10, or 30 years.
+
+Built for real-world decision making, not just a demo calculator.
+
+[![Build & Test](https://github.com/pavel-jurka/hypokalkulacka/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/pavel-jurka/hypokalkulacka/actions)
 
 ## Requirements
 
 - iPadOS 17 or later
-- Xcode 15+
+- Xcode 15+ / Swift 5.9+
+- No external dependencies — pure Apple frameworks
+
+## Architecture
+
+```
+ContentView.swift (~1,450 lines)
+├── TaxMode               — enum: flat-rate vs. actual costs
+├── ExtraPayment          — one-off principal payment (manual or auto-generated)
+├── YearData              — computed results for one year (immutable struct)
+├── MortgageViewModel     — @Observable; inputs + calculation engine
+│   ├── schedule          — computed amortization schedule [YearData]
+│   ├── autoExtraPayments — computed: rent-as-payments (reactive)
+│   └── computeTax()      — Czech tax law § 9 ZDP
+├── ContentView           — NavigationSplitView root
+├── InputPanel            — left panel: all inputs as sliders/toggles
+├── DetailPanel           — right panel: charts/table + PDF export
+├── SnapshotHeader        — year slider + cumulative overview cards
+├── ChartPanel            — 4 interactive charts (Swift Charts)
+├── YearTable             — full amortization schedule table
+└── PDFReportView         — rendered to PDF via ImageRenderer
+```
+
+**Key design decisions:**
+
+| Decision | Why |
+|---|---|
+| `@Observable` (not `ObservableObject`) | Eliminates `@Published` boilerplate, cleaner reactivity. Requires iOS 17. |
+| Single file | All logic + UI in one place. Fast iteration, easy to search. No premature abstraction. |
+| Computed `schedule` | Recalculates on every input change. 30 years × 12 months = 360 iterations — instant. |
+| Computed `autoExtraPayments` | Reactive to all input changes (rent, vacancy, rate...). No stale state. |
+| `series:` on `LineMark` | Required to keep multiple chart series separate. Without it, Charts connects all points into one jagged line. |
+| `chartForegroundStyleScale` | Only way to generate a legend in Swift Charts. |
+| PDF via `ImageRenderer → cgImage → CGContext` | Reliable cross-platform approach. No UIKit dependency. |
+| SwiftUI `Table` 10-column limit | Repairs + operating costs merged into single "Náklady" column. |
 
 ## Features
 
-### Inputs (left panel)
+### Financial Model
 
-| Section | Parameter | Default value | Range |
-|---|---|---|---|
-| Property | Purchase price | 12,875,000 CZK | 1 M – 30 M |
-| Property | Own capital | 10 % (1,287,500 CZK) | 5 – 50 % |
-| Mortgage | Duration | 20 years | 5 – 30 |
-| Mortgage | Interest rate | 4.50 % | 0.5 – 10 % |
-| Mortgage | Rate after refixation *(optional)* | 5.00 % | 0.5 – 12 % |
-| Mortgage | End of fixed period *(optional)* | year 5 | 1 – (duration−1) |
-| Income | Monthly rent | 30,000 CZK | 10 k – 80 k |
-| Income | Annual rent growth | 2.00 % | 0 – 8 % |
-| Tax | Tax rate *(optional)* | 15 % | 10 – 25 % |
-| Repairs | Annual maintenance | 130,000 CZK | 0 – 300 k |
-| Repairs | Major maintenance every N years | 10 years / 300,000 CZK | 2–20 yrs / 50 k–1 M |
+The calculator models a complete property investment scenario:
 
-All values are controlled by sliders — any change instantly recalculates the full schedule.
-
-The app continuously displays:
-- **Monthly payment** — calculated from the annuity formula, updates live
-- **Monthly payment after refixation** — shown when refixation is enabled
-- **Total tax over full term** — shown when tax is enabled
-- **Payoff year** — shown when extra payments pay off the mortgage early
-- **Break-even year** — the first year the cumulative net result turns positive
-- **Net result over the full mortgage term**
-
-### Extra principal payments
-
-Any number of one-off principal payments can be added for specific years:
-
-1. Choose the year with the Stepper (1 — mortgage duration)
-2. Set the amount with the slider (10,000 — 3,000,000 CZK, step 10,000 CZK)
-3. Tap **Add extra payment**
-
-Each payment has a **toggle** — it can be temporarily disabled without deleting it. This lets you compare scenarios (e.g. "what if I paid an extra 500,000 CZK in year 5?") by simply flipping the switch.
-
-If extra payments pay off the mortgage early, the payoff year is shown.
-
-### Interest rate refixation
-
-Enable the **Rate change after refixation** toggle to simulate what happens when your fixed-rate period ends:
-
-- Set the end of the fixed period (year slider)
-- Set the new interest rate
-- The monthly payment is automatically recalculated from the remaining balance and remaining term
-- The refixation year is marked with a ↺ icon in the table and a vertical line in the amortisation chart
-
-### Rental income tax
-
-Enable **Rental income tax** to include Czech income tax on rental earnings:
-
-| Mode | Basis |
+| Category | Parameters |
 |---|---|
-| Flat-rate expense 30 % | Taxable base = 70 % of rental income |
-| Actual costs | Taxable base = rent − interest − repairs (min. 0) |
+| **Property** | Purchase price (1M–30M CZK), own capital (5–50%), optional reconstruction (0–2M) |
+| **Mortgage** | Duration (5–30 years), interest rate (0.5–10%), optional rate refixation |
+| **Rental income** | Monthly rent (10k–80k), annual growth (0–8%), vacancy (0–4 months/year) |
+| **Operating costs** | Insurance, SVJ/maintenance fund, optional property management fee (% of rent) |
+| **Repairs** | Annual maintenance + periodic major repairs |
+| **Tax** | Czech income tax on rental income — flat-rate 30% expense or actual costs (§ 9 ZDP) |
+| **Extra payments** | Manual one-off payments + automatic rent-as-payments (computed, reactive) |
+| **Investment view** | Property appreciation, alternative investment comparison, inflation discount |
 
-The tax rate slider defaults to 15 % (standard Czech rate). Tax is subtracted from the net result each year and shown as a separate column in the table and a separate snapshot card.
+### Calculation Model
 
-### Snapshot (cumulative overview at a selected year)
-
-The slider at the top of the right panel lets you "travel in time" — drag it to any year and instantly see cumulative values up to that point in two rows of cards.
-
-**Row 1 — Including own capital** (investor's perspective):
-
-| Card | Description |
-|---|---|
-| Total payments | Sum of all regular + extra payments sent to the bank |
-| of which interest | How much of the above was pure interest (sunk cost) |
-| Remaining debt | Unpaid principal at the end of the selected year |
-| Rental income | Cumulative rental income (with annual growth) |
-| Net result | Starts at −own capital; each year adds rent − interest − repairs − tax |
-
-**Row 2 — Excluding own capital** (pure cash flow, after tax):
-
-| Card | Description |
-|---|---|
-| Paid to bank | Cumulative mortgage payments (regular + extra) |
-| Rental income | Cumulative rental income |
-| Tax | Cumulative tax paid *(shown only when tax is enabled)* |
-| Rent − payments − tax | Positive = rental income covers all mortgage payments with surplus |
-
-### Charts
-
-Use the **Chart / Table** toggle in the right panel to switch views.
-
-#### 1. Cumulative net result
-A line chart showing the total investment result from day one. Red = in the red, green = in the black. An indigo vertical line marks the year selected in the snapshot slider.
-
-> **Includes:** −own capital + rent − interest − repairs − tax − extra payments  
-> **Excludes:** property value, alternative investment returns
-
-#### 2. Payment breakdown: principal vs. interest
-Normalised stacked bars (100 %). Early in the mortgage, interest dominates; it reverses towards the end. Shows how much of each payment actually reduces your debt vs. how much is pure cost. If refixation is enabled, a vertical indigo line marks the year the rate changes.
-
-#### 3. Remaining debt and cumulative interest
-Two separate series on the same axis:
-- **Blue (declining)** — remaining unpaid principal
-- **Red (rising)** — cumulative interest paid to date
-
-The intersection means: *"from this year on, you have paid more in interest than you still owe."*
-
-#### 4. Annual net result
-One bar per year: `rent − interest − repairs − tax`. A wrench icon marks major maintenance years. Red bars = you topped up out of pocket that year.
-
-### Table
-
-Year-by-year view of all calculated values:
-
-| Column | Description |
-|---|---|
-| Year | Year number; 🔧 = major maintenance year, ↺ = refixation year |
-| Interest | Interest portion of payments (red) |
-| Extra payment | One-off principal payment if scheduled (purple) |
-| Principal | Debt-reducing portion of payments |
-| Remaining debt | Unpaid principal at year end (orange) |
-| Rental income | Actual income that year (grows with rent inflation) |
-| Tax | Income tax on rental earnings (purple) |
-| Repairs | Total annual maintenance cost; bold in major maintenance years |
-| Net year | Rent − interest − repairs − tax |
-| Cumulative | Total result from the start of the investment |
-
-### PDF export
-
-Tap **Export PDF** in the top bar of the right panel to generate a report. A sheet appears with a **Share / Save to Files** button that opens the system share sheet (AirDrop, Mail, Files, Print…).
-
-The PDF report includes:
-- Input parameters summary
-- Overall results (colour-coded cards)
-- All four charts in a 2 × 2 grid
-- Full year-by-year table
-
-## Calculation model
-
-### Annuity payment
-The monthly payment is calculated using the standard annuity formula:
-
+**Annuity formula:**
 ```
 M = P × r × (1+r)^n / ((1+r)^n − 1)
 ```
+where `P` = mortgage amount, `r` = monthly rate, `n` = total months.
 
-where `P` = mortgage amount, `r` = monthly interest rate (`annual rate / 12`), `n` = total number of months.
-
-### Annual rental income
-Rent grows geometrically each year:
-
+**Cumulative net result:**
 ```
-rent(year) = monthly_rent × 12 × (1 + growth/100)^(year−1)
+Start = −own_capital
+Each year += rent − interest − repairs − operating_costs − tax − extra_payment
 ```
+Principal repayment is NOT subtracted — it converts cash into property equity.
 
-### Interest rate refixation
-At the start of the year following the fixed-rate period, the monthly payment is recalculated:
+**Tax (Czech law § 9 ZDP):**
+- Flat-rate: taxable base = 70% of rental income
+- Actual costs: taxable base = max(0, rent − interest − repairs − management − insurance − SVJ)
 
+**Total investment result:**
 ```
-new_payment = remaining_balance × r2 × (1+r2)^m / ((1+r2)^m − 1)
-```
-
-where `r2` = new monthly rate, `m` = remaining months.
-
-### Rental income tax
-Two modes available under Czech tax law (§ 9 Income Tax Act):
-
-- **Flat-rate expense 30 %:** taxable base = rental income × 70 %, tax = base × rate
-- **Actual costs:** taxable base = max(0, rent − interest − repairs), tax = base × rate
-
-### Cumulative net result
-Starting value = −own capital. Each year adds:
-
-```
-Δ = rental_income − interest_paid − repairs − tax − extra_payment
+cumulative_net + property_value − remaining_debt
 ```
 
-Principal repayment (`principalPaid`) is **not subtracted** — it does not leave your net worth, it merely shifts cash into equity in the property.
+### Interactive Features
 
-### Extra payments
-Applied at the end of each year after regular payments. Capped at the remaining balance. Once the mortgage is paid off, subsequent years show no payments — net income = rent − repairs − tax.
+- **4 charts:** amortization breakdown, cumulative net result, debt vs. cumulative interest, annual net result
+- **Snapshot slider:** drag to any year, see cumulative values across 3 rows of cards (investor view, investment view, cash flow)
+- **PDF export:** full report with parameters, result cards, charts (2×2 grid), year-by-year table
+- **Toggle-based:** every feature is optional — compare scenarios by flipping switches
+- **Auto extra payments:** enable "rent as payments" and the app computes how many years of rental income pay off the mortgage early. Amounts grow with rent, react to all parameter changes.
 
-## Code architecture
+### UI
 
+- All text in **Czech** (labels, sections, charts, table, PDF)
+- Currency: CZK with thin-space grouping, compact format in charts (1.2 M / 350 k)
+- iPad-optimized: `NavigationSplitView` with left input panel + right detail panel
+
+## Testing
+
+Comprehensive unit tests covering:
+
+- **Annuity formula** — standard, zero-rate, short term, known reference values
+- **Amortization invariants** — balance reaches zero, principal + interest = payment, monotonicity
+- **Rental income** — geometric growth, vacancy reduction
+- **Tax computation** — both modes, all deductible costs, disabled state
+- **Refixation** — payment changes, year marking
+- **Extra payments** — balance reduction, capping, auto-reactivity, rent growth
+- **Operating costs** — impact on net result, management fee calculation
+- **Property appreciation** — value growth, total investment result
+- **Snapshot** — year selection, opportunity cost, inflation discount
+- **Edge cases** — min/max values, all features enabled simultaneously
+- **Financial precision** — known reference values, payment composition over time
+
+Run tests:
+```bash
+xcodebuild test \
+  -scheme HypotecniKalkulacka \
+  -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M4)'
 ```
-ContentView.swift
-├── TaxMode               — enum: flat-rate expense vs. actual costs
-├── ExtraPayment          — one-off principal payment data structure
-├── YearData              — computed results for one year (read-only)
-├── MortgageViewModel     — @Observable; all inputs + calculation logic
-├── czk()                 — helper for formatting CZK amounts
-├── ContentView           — root view (NavigationSplitView)
-├── InputPanel            — left panel: all sliders and inputs
-├── SliderRow             — reusable slider row component
-├── DetailPanel           — right panel: Chart ↔ Table toggle + PDF export
-├── SnapshotHeader        — year slider + two sets of cumulative cards
-├── SnapCard              — individual info card in SnapshotHeader
-├── ChartPanel            — ScrollView with four charts (Charts framework)
-├── YearTable             — Table view with the amortisation schedule
-└── PDFReportView         — view rendered to PDF (parameters, charts, table)
-```
 
-**Key technical decisions:**
-- `@Observable` instead of `ObservableObject` — requires iOS 17, eliminates `@Published`
-- `series:` parameter on `LineMark` — required to keep multiple series separate in one `Chart`; without it, Charts connects all data points into a single jagged line
-- `chartForegroundStyleScale` — the only way to generate a chart legend; direct `.foregroundStyle(Color.X)` colours the marks but produces no legend entry
-- The amortisation schedule is a computed property (not cached) — fast enough at 30 years × 12 months = 360 iterations
-- PDF generation uses `ImageRenderer` → `cgImage` → `CGContext` PDF wrapper (no UIKit dependency)
+## CI/CD
 
-## What the app does not model
+GitHub Actions workflow runs on every push and PR to `main`:
+- **Build** — compile the full project
+- **Test** — run all unit tests
 
-- Property insurance and home contents insurance
-- Property management fees (letting agent commission)
-- Property value appreciation or depreciation over time
-- Alternative investment return on own capital (opportunity cost)
-- Vacancy periods (months without a tenant)
+## What the App Does Not Model
+
+- Property value depreciation scenarios (only appreciation)
+- Mortgage insurance (pojištění schopnosti splácet)
+- Property management beyond simple fee percentage
+- Vacancy patterns (only average months/year)
 - Depreciation allowance as a tax deduction
+- Multiple properties / portfolio view
+- Currency other than CZK
+
+## Project Structure
+
+```
+HypotecniKalkulacka/
+├── .github/workflows/
+│   └── build-and-test.yml          — CI: build + test on push/PR
+├── HypotecniKalkulacka/
+│   ├── HypotecniKalkulackaApp.swift — entry point (@main)
+│   ├── ContentView.swift            — all logic + UI (~1,450 lines)
+│   └── Assets.xcassets/             — app icon + colors
+├── HypotecniKalkulackaTests/
+│   └── HypotecniKalkulackaTests.swift — 35+ unit tests
+├── README.md                        — this file
+└── CLAUDE.md                        — AI assistant project context
+```
+
+## License
+
+Private project.
